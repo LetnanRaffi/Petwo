@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Petwo Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-on-surface": "#eef1f6",
+                    "surface": "#f7f9fe",
+                    "primary-fixed": "#b9eafd",
+                    "on-secondary-fixed": "#1c1c17",
+                    "secondary-container": "#e6e2d9",
+                    "background": "#f7f9fe",
+                    "on-tertiary-fixed-variant": "#514538",
+                    "on-secondary": "#ffffff",
+                    "primary": "#346574",
+                    "outline-variant": "#c0c8cb",
+                    "surface-container-high": "#e5e8ed",
+                    "on-background": "#181c20",
+                    "on-tertiary-fixed": "#231a0f",
+                    "surface-container": "#ebeef3",
+                    "on-primary-fixed": "#001f28",
+                    "on-error-container": "#93000a",
+                    "error": "#ba1a1a",
+                    "on-tertiary": "#ffffff",
+                    "on-surface": "#181c20",
+                    "surface-container-highest": "#e0e3e7",
+                    "outline": "#71787c",
+                    "secondary-fixed-dim": "#c9c6be",
+                    "surface-tint": "#346574",
+                    "on-primary": "#ffffff",
+                    "surface-bright": "#f7f9fe",
+                    "inverse-surface": "#2d3135",
+                    "error-container": "#ffdad6",
+                    "secondary-fixed": "#e6e2d9",
+                    "secondary": "#605e58",
+                    "surface-container-low": "#f1f4f9",
+                    "surface-dim": "#d7dadf",
+                    "tertiary": "#6a5c4e",
+                    "primary-container": "#a7d8ea",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface-variant": "#40484b",
+                    "surface-variant": "#e0e3e7",
+                    "on-secondary-fixed-variant": "#484741",
+                    "tertiary-container": "#e0cdbc",
+                    "inverse-primary": "#9dcee0",
+                    "tertiary-fixed-dim": "#d6c3b3",
+                    "on-tertiary-container": "#645649",
+                    "on-primary-fixed-variant": "#184d5c",
+                    "on-secondary-container": "#66645e",
+                    "on-primary-container": "#2e5f6f",
+                    "on-error": "#ffffff",
+                    "primary-fixed-dim": "#9dcee0",
+                    "tertiary-fixed": "#f3dfce"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "12px",
+                    "2xl": "24px",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "32px",
+                    "xl": "48px",
+                    "xs": "4px",
+                    "gutter": "16px",
+                    "sm": "12px",
+                    "base": "8px",
+                    "md": "20px",
+                    "margin-desktop": "40px",
+                    "margin-mobile": "20px"
+            },
+            "fontFamily": {
+                    "label-md": ["Be Vietnam Pro"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "body-lg": ["Be Vietnam Pro"],
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-md": ["Be Vietnam Pro"]
+            },
+            "fontSize": {
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .cloud-shadow {
+            box-shadow: 0 12px 30px -10px rgba(52, 101, 116, 0.12);
+        }
+        .bouncy-button {
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .bouncy-button:active {
+            transform: translateY(2px);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .glass-card-primary {
+            background: rgba(52, 101, 116, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background: linear-gradient(135deg, #f7f9fe 0%, #eef1f6 100%);
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body class="text-on-surface font-body-md pb-32">
+<!-- Top App Bar -->
+<header class="sticky top-0 z-40 w-full backdrop-blur-md bg-surface/80 border-b border-outline-variant/30">
+<div class="flex justify-between items-center px-margin-mobile py-base w-full max-w-[1200px] mx-auto">
+<!-- Duo Avatar Leading -->
+<div class="relative flex items-center h-12 w-16">
+<div class="absolute left-0 w-10 h-10 rounded-full border-[2px] border-white overflow-hidden shadow-sm">
+<img alt="User 1" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHuIVlhLJmpKcvdO-dRu7RkaMScdC-e63-edhX5CooI3oPlRDYIqpaurVCGjHuYnFZ0gcRDGzVDbrIysazbVcRFY4B-UHlUDylf59SJo2wLSZV0ZZ0XAPLlHX7RwJ3CZxgUd4NlNtDvYq8oBgj8eqTFNXUl1xQnHJlmiXL9YHb9OKwcnvLH_svOTUaCsSnHiqLfInslq2vUDVCMA6D7ZLeYj6advQjcxkT748Gp0WOeu8XuLrTNf_pv7-YsngijsfYZgtSYmA4YbA"/>
+</div>
+<div class="absolute left-6 w-10 h-10 rounded-full border-[2px] border-white overflow-hidden shadow-sm">
+<img alt="User 2" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnCAmtEmMnh3lXuad2Zu_w-Evg1pHFP1N-ydDuERJNcG957vFWQeBZPGaCeo2dm1uf3VaFAWim-C7A0YF3VDcKVOo9HDIziHsGOG_kM8EI_ZL8MFK2IUtcbe6v5AI0dX9jSWQe90OAnwUh-6gShbNxiD8XzD7dKybtcVBh1ZPWIBDqhEukU-iohsJk8UyNeN7LqTNInC4JvFTL2Tj77aMjQXRFWq7-s_gIDasYSC9pC4uf2pF41utSnYlv36I-DPHhci8-I28Br-A"/>
+</div>
+</div>
+<!-- Headline -->
+<h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tight">Petwo</h1>
+<!-- Trailing Icon -->
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-primary hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined" data-icon="favorite">favorite</span>
+</button>
+</div>
+</header>
+<main class="max-w-[1200px] mx-auto px-margin-mobile pt-lg space-y-lg">
+<!-- Bento Grid Section -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Daily Streak Card (Priority) -->
+<div class="md:col-span-7 bg-primary-container/80 p-lg rounded-2xl cloud-shadow flex flex-col justify-between min-h-[200px] relative overflow-hidden group border border-white/40">
+<div class="absolute -right-8 -top-8 w-32 h-32 bg-white/30 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
+<div class="z-10">
+<span class="font-label-md text-label-md text-primary/70 uppercase tracking-widest">Together Since</span>
+<h2 class="font-display-lg text-display-lg text-on-primary-container mt-xs">Day 42</h2>
+</div>
+<div class="z-10 flex items-end justify-between">
+<p class="text-on-primary-container/90 font-medium max-w-[180px]">Our journey of warmth and care continues.</p>
+<div class="w-12 h-12 bg-white/40 rounded-full flex items-center justify-center backdrop-blur-sm shadow-sm">
+<span class="material-symbols-outlined text-primary" data-icon="auto_awesome">auto_awesome</span>
+</div>
+</div>
+</div>
+<!-- Partner's Mood Card -->
+<div class="md:col-span-5 glass-card p-lg rounded-2xl flex flex-col items-center justify-center text-center space-y-base cloud-shadow">
+<div class="relative w-20 h-20">
+<img alt="Partner" class="w-full h-full object-cover rounded-full border-2 border-white shadow-md" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBomnntz6WW4LG_6pJ5DixAWf1uZYp-jv_6Pez9j2gE7uZ7GBUiZjpceR1oOZeNszB0Y2h3_eCE3Hx8Gt0KerSmICzecvbtFwQlzZ55QqQ9qcpr4dSx0q7Zp42-51AIA5rDhBwi9u7r0S_BMUkAu-L5orEj_2_OcSoeyljeMBov9CoDTqRcf0vsd0qC2UjvsYN54t8BIUYdPSeRTlScS1mJsaFq_bo6lGPFbRjzcN2L2oxLs9W2hauHUv8m05c0SffalaUUMc64rY8"/>
+<div class="absolute -bottom-1 -right-1 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-sm border border-outline-variant">
+<span class="text-[10px] font-bold text-primary">😌 Chill</span>
+</div>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant/80 uppercase tracking-wider text-[11px]">Your Partner is</p>
+<h3 class="font-headline-md text-headline-md text-on-surface">Feeling Cozy</h3>
+</div>
+<button class="bouncy-button bg-primary text-white px-base py-1.5 rounded-full text-label-md font-semibold flex items-center gap-xs shadow-sm hover:bg-on-primary-fixed-variant transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="send">send</span>
+                Nudge
+            </button>
+</div>
+<!-- Moci the Pet Widget -->
+<div class="md:col-span-12 glass-card rounded-2xl p-lg cloud-shadow flex flex-col md:flex-row items-center gap-lg">
+<div class="w-32 h-32 md:w-40 md:h-40 rounded-2xl overflow-hidden bg-surface-container-high shrink-0 shadow-inner border border-white/50">
+<img alt="Moci" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuveMyjrl0sRY0WxJdAd2hzyOfzDP-rIkR2vinUjT2xEXGJZFaSkv0fTLHwilzLocX1r1UqgRXoa1WQ_EX4pobY9ofuiumBFqvUqOXpXDUTV2QxoNzXlH7wCxkINqMSRWFjbIt4PrZ5bb5bLE_87QPzqAJWgr1v9PW2Ve8sMhGP9eDBBcxRgskPLo9r88NbJP5D0Z6MZA3DJ26fdGaCar5r2rSB1qJ-UXFonHH1v_q23GINCjSGcPbJ762g8hOc-hFmLOD0_dStJM"/>
+</div>
+<div class="flex-grow space-y-sm text-center md:text-left">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-sm">
+<div>
+<h3 class="font-headline-md text-headline-md text-primary">Moci</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Is currently dreaming about fishies.</p>
+</div>
+<div class="bg-primary-container/30 border border-primary/20 px-sm py-1 rounded-full flex items-center justify-center gap-base">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="restaurant">restaurant</span>
+<span class="font-label-md text-label-md text-primary">Next meal in 2h</span>
+</div>
+</div>
+<!-- Shared Progress Bar -->
+<div class="space-y-xs pt-base">
+<div class="flex justify-between text-label-md font-semibold text-on-surface-variant/80">
+<span>Trust Level 4</span>
+<span>85%</span>
+</div>
+<div class="w-full h-2.5 bg-surface-container-highest/50 rounded-full overflow-hidden border border-white/20">
+<div class="h-full bg-primary rounded-full" style="width: 85%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Memories / Quick Action Section -->
+<div class="md:col-span-6 glass-card p-lg rounded-2xl cloud-shadow space-y-md">
+<div class="flex justify-between items-center">
+<h4 class="font-headline-md text-headline-md text-on-surface">Journal</h4>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="arrow_forward">arrow_forward</span>
+</div>
+<div class="space-y-sm">
+<div class="p-sm bg-white/40 hover:bg-white/60 rounded-xl flex gap-sm items-center transition-colors cursor-pointer border border-white/30">
+<div class="w-12 h-12 rounded-lg bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="photo">photo</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface font-bold">New photo added</p>
+<p class="text-[12px] text-on-surface-variant">2 hours ago • By Him</p>
+</div>
+</div>
+<div class="p-sm bg-white/40 hover:bg-white/60 rounded-xl flex gap-sm items-center transition-colors cursor-pointer border border-white/30">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="edit">edit</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface font-bold">Morning check-in</p>
+<p class="text-[12px] text-on-surface-variant">Today • 9:15 AM</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Game Stats -->
+<div class="md:col-span-6 glass-card p-lg rounded-2xl cloud-shadow flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-headline-md text-headline-md text-on-surface">Game Night</h4>
+<p class="font-body-md text-body-md text-on-surface-variant">Current score: 1,240</p>
+</div>
+<div class="w-10 h-10 bg-primary-container/50 border border-primary/20 flex items-center justify-center rounded-full">
+<span class="material-symbols-outlined text-primary" data-icon="casino">casino</span>
+</div>
+</div>
+<button class="w-full bouncy-button bg-primary text-white font-bold py-sm rounded-xl mt-lg flex items-center justify-center gap-base shadow-md hover:bg-on-primary-fixed-variant transition-colors">
+                Play Together
+            </button>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter pb-6 pt-2 backdrop-blur-lg bg-surface-container-low/90 border-t border-outline-variant/30">
+<!-- Home Active -->
+<a class="flex flex-col items-center justify-center bg-primary text-white rounded-full px-5 py-1.5 hover:opacity-90 transition-all duration-150 active:scale-90 shadow-sm" href="#">
+<span class="material-symbols-outlined" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-md text-[12px]">Home</span>
+</a>
+<!-- Pet -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container px-4 py-1.5 rounded-full transition-all duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="pets">pets</span>
+<span class="font-label-md text-[12px]">Pet</span>
+</a>
+<!-- Journal -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container px-4 py-1.5 rounded-full transition-all duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-label-md text-[12px]">Journal</span>
+</a>
+<!-- Game -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container px-4 py-1.5 rounded-full transition-all duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="casino">casino</span>
+<span class="font-label-md text-[12px]">Game</span>
+</a>
+</nav>
+<!-- Micro-interactions Script -->
+<script>
+    document.querySelectorAll('.cloud-shadow').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'translateY(-4px)';
+            card.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        });
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = 'translateY(0)';
+        });
+    });
+
+    const nudgeBtn = document.querySelector('.bouncy-button');
+    if (nudgeBtn) {
+        nudgeBtn.addEventListener('click', () => {
+            const icon = nudgeBtn.querySelector('.material-symbols-outlined');
+            if (icon) {
+                icon.style.transform = 'rotate(-15deg) scale(1.2)';
+                icon.style.transition = 'transform 0.2s ease';
+                setTimeout(() => {
+                    icon.style.transform = 'rotate(0) scale(1)';
+                }, 200);
+            }
+        });
+    }
+</script>
+</body></html>

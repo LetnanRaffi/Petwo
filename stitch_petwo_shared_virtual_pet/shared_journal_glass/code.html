@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Petwo - Shared Journal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .serene-bg {
+            background: radial-gradient(circle at top left, #f7f9fe, #eef1f6);
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+        }
+        .bouncy-button:active {
+            transform: translateY(2px);
+        }
+        .bouncy-button {
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .duo-avatar-container {
+            display: flex;
+            align-items: center;
+        }
+        .duo-avatar-item {
+            width: 32px;
+            height: 32px;
+            border-radius: 9999px;
+            border: 2px solid #ffffff;
+            object-fit: cover;
+        }
+        .duo-avatar-item:last-child {
+            margin-left: -12px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-on-surface": "#eef1f6",
+                      "surface": "#f7f9fe",
+                      "primary-fixed": "#b9eafd",
+                      "on-secondary-fixed": "#1c1c17",
+                      "secondary-container": "#e6e2d9",
+                      "background": "#f7f9fe",
+                      "on-tertiary-fixed-variant": "#514538",
+                      "on-secondary": "#ffffff",
+                      "primary": "#346574",
+                      "outline-variant": "#c0c8cb",
+                      "surface-container-high": "#e5e8ed",
+                      "on-background": "#181c20",
+                      "on-tertiary-fixed": "#231a0f",
+                      "surface-container": "#ebeef3",
+                      "on-primary-fixed": "#001f28",
+                      "on-error-container": "#93000a",
+                      "error": "#ba1a1a",
+                      "on-tertiary": "#ffffff",
+                      "on-surface": "#181c20",
+                      "surface-container-highest": "#e0e3e7",
+                      "outline": "#71787c",
+                      "secondary-fixed-dim": "#c9c6be",
+                      "surface-tint": "#346574",
+                      "on-primary": "#ffffff",
+                      "surface-bright": "#f7f9fe",
+                      "inverse-surface": "#2d3135",
+                      "error-container": "#ffdad6",
+                      "secondary-fixed": "#e6e2d9",
+                      "secondary": "#605e58",
+                      "surface-container-low": "#f1f4f9",
+                      "surface-dim": "#d7dadf",
+                      "tertiary": "#6a5c4e",
+                      "primary-container": "#a7d8ea",
+                      "surface-container-lowest": "#ffffff",
+                      "on-surface-variant": "#40484b",
+                      "surface-variant": "#e0e3e7",
+                      "on-secondary-fixed-variant": "#484741",
+                      "tertiary-container": "#e0cdbc",
+                      "inverse-primary": "#9dcee0",
+                      "tertiary-fixed-dim": "#d6c3b3",
+                      "on-tertiary-container": "#645649",
+                      "on-primary-fixed-variant": "#184d5c",
+                      "on-secondary-container": "#66645e",
+                      "on-primary-container": "#2e5f6f",
+                      "on-error": "#ffffff",
+                      "primary-fixed-dim": "#9dcee0",
+                      "tertiary-fixed": "#f3dfce"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "64px",
+                      "margin-mobile": "16px",
+                      "gutter": "24px",
+                      "md": "24px",
+                      "margin-desktop": "48px",
+                      "sm": "12px",
+                      "xs": "4px",
+                      "lg": "40px",
+                      "base": "8px"
+              },
+              "fontFamily": {
+                      "label-sm": ["Be Vietnam Pro"],
+                      "body-lg": ["Be Vietnam Pro"],
+                      "headline-md": ["Plus Jakarta Sans"],
+                      "headline-lg": ["Plus Jakarta Sans"],
+                      "headline-lg-mobile": ["Plus Jakarta Sans"],
+                      "body-md": ["Be Vietnam Pro"],
+                      "label-md": ["Be Vietnam Pro"]
+              },
+              "fontSize": {
+                      "label-sm": ["12px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "headline-md": ["28px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "headline-lg": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-lg-mobile": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "label-md": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen pb-24">
+<div class="serene-bg"></div>
+<!-- Top App Bar -->
+<header class="sticky top-0 z-50 bg-surface/40 backdrop-blur-md w-full border-b border-white/20">
+<div class="flex justify-between items-center px-margin-mobile py-base w-full max-w-[1200px] mx-auto h-16">
+<div class="duo-avatar-container">
+<img alt="User 1" class="duo-avatar-item" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzPg6rYDOA3ssFoLLdVunztGCT1wbQjD57TYHlt9co84VdTQ4pivTdJEzNXpuqboI4cnmPedb3PA8yxU7XaqUxeLqe8SGFAQWx9cEP_OyD3XPZMqPJ166fqDYm_UxkWRQNtzSEmH8phs4zVX3SOOtS4_-as39z02E-rM6G94mBsETkLfD5mQbB2kTIyoYlCWCle4PiMizAchOCBQY-mWzAOVFBuf5bQAKW8ZSBa0eUvEj8aLmp30Jd9J-Rq2jolocxW2bWCxa3iWE"/>
+<img alt="User 2" class="duo-avatar-item" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyH9IfMQ0vFpj_2jztnz-QFket_MJvFQc_IRMsGAiu_DWnL2HGBfTWKx4DFBsKrhxYG2z6qUFjcLe75k4zPEd03aEmwP5a6TYhRUXleAgStxNOgK799MvCu4OCQNDaYyNDWj-gHP6Mo30bgsqeCfiWc6qS9P-sSFKZxc2BgqZjz40dE_p6ClNWCejHzlkSAqpvt0nyfEQXqJwmlvLXfHiEIsKcPUwFHUb65fK0jnyTspfC0EJkytE2ury5wdVaBwn5ki71N5_I3y4"/>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Petwo</h1>
+<button class="text-primary hover:bg-white/40 transition-colors p-2 rounded-full active:scale-95">
+<span class="material-symbols-outlined" data-icon="favorite">favorite</span>
+</button>
+</div>
+</header>
+<main class="max-w-[600px] mx-auto px-margin-mobile pt-lg space-y-lg">
+<!-- Header Section -->
+<div class="space-y-xs">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">Shared Journal</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Day 42 of our journey together</p>
+</div>
+<!-- Timeline Section -->
+<div class="relative space-y-xl before:absolute before:left-6 before:top-0 before:h-full before:w-0.5 before:bg-primary/10">
+<!-- Journal Entry 1 -->
+<div class="relative pl-12">
+<div class="absolute left-0 top-2 w-12 h-12 rounded-full bg-white flex items-center justify-center border-2 border-primary-container z-10 overflow-hidden shadow-sm">
+<img alt="Alex" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYv1vRy6EHXKU6GZloIDHFcOj-eCeimhyJ9c0WCtidbVVwRDOFWV6JluXcOjWTHoMV31zeiP7M8BbTcIYn5Yht6V9p7Cs_RJHuo20bNh3TIjuxTSpZDiwK--YXRtZ_FPXaEFp1_ZxpuF7sRvxi0eSSzrEcvUkNw5ZZWAVIeO_ed0qPoTCOj7xaafzlnWmagrLIzxKF5OVPzMm_czC8KsethckXYxseNlRc1U-L4_6XG5yMgg1D1fqQXJ6waDNEjy456scW6JguLgs"/>
+</div>
+<div class="glass-card p-md rounded-xl relative">
+<div class="flex justify-between items-center mb-base">
+<span class="font-label-md text-label-md text-primary">Alex</span>
+<span class="font-label-md text-label-md text-on-surface-variant opacity-60">10:24 AM</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface">Had a great walk today! 🌳 The park was so quiet and we saw a family of ducks. Can't wait to go back with you this weekend.</p>
+<div class="mt-md flex gap-base">
+<div class="px-sm py-xs bg-primary/10 text-on-primary-container rounded-full font-label-md text-label-md">
+                            #park
+                        </div>
+<div class="px-sm py-xs bg-secondary-container/50 text-on-secondary-container rounded-full font-label-md text-label-md">
+                            #peaceful
+                        </div>
+</div>
+</div>
+</div>
+<!-- Journal Entry 2 (Image Entry) -->
+<div class="relative pl-12">
+<div class="absolute left-0 top-2 w-12 h-12 rounded-full bg-white flex items-center justify-center border-2 border-primary-container z-10 overflow-hidden shadow-sm">
+<img alt="Jordan" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1n55wv_QqB7uf8kpVp5zoCKwSuO6gbeAvVIcgdixRSgsV5eahPGR6kqdsw17eq-gs1WvH02o0Dby8R3GwCmbdM1daGy3QWwQVM7QZHeyVGR9jl2cZv8iN8GvxLL8W997-XHKphSlUHfLTSYsZrwhkWPKFeAOWtQDvcIMi-1aLovnUJNGnIcSGC7d4vHA9gm40AlMLzPJlCB4Dv0JfMUTm35M2gcYZ7xLjk2SVVItiQAAPrjh8fgYrv-8v-5HXGkQ7fOaQLN_qr7Q"/>
+</div>
+<div class="glass-card p-md rounded-xl">
+<div class="flex justify-between items-center mb-base">
+<span class="font-label-md text-label-md text-secondary">Jordan</span>
+<span class="font-label-md text-label-md text-on-surface-variant opacity-60">Yesterday</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface mb-md">Found this little coffee shop near the train station. Look at this latte art! ☕️</p>
+<div class="rounded-xl overflow-hidden mb-base">
+<img alt="Coffee shop" class="w-full h-48 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLBCPXUVzfO4M_OBbmHY8Y3jDSfEUEG5z_FUoC8OYfHn-2TCZmlooV9OHnaQoQ9u0OODsdS7avEvcBYrw-e_B_9t_pfYJS_pKncFAIHA_sxVOHGcTSyj4HR1C03RQApY-0HbtDuNFEv3BtwqCm2Ylu-gKKwMbwMPZB4UHBMKC_ZVqMQivfkmsDmSy8T9PurRpFopcf-WKnymktroaspmPePVCsCFRyFdDIICmSKhjSmvuBPVdylyCSTSWubbTB8eHFC6KXya7LcO0"/>
+</div>
+</div>
+</div>
+<!-- Journal Entry 3 -->
+<div class="relative pl-12">
+<div class="absolute left-0 top-2 w-12 h-12 rounded-full bg-white flex items-center justify-center border-2 border-primary-container z-10 overflow-hidden shadow-sm">
+<img alt="Alex" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDXvfMJGMg4Ri1yIa7_qKl3SLEi4vKJquUfh3B5NTk0gpW-sG8FsCCYxmRYQuwDvtpfdjQiUjTZLTOiwqUZz0yju_m3nmqrjR-O37scAJSnJ_RFBFBzX0WFkkI9YTjL1mv3zW75r8vG9Qo4nLY8RESRhk8qI4YMfXaxEp5Scc8LxyTWoAwLhXTJH1iAmu7Sf1Ja_9CZ2SAq3jxAXgdg1i_YIZlAKL91nsaMbsKl6FO7A_E5sQmNe58EsrtchGvm58nqAM4iHGyGmA"/>
+</div>
+<div class="glass-card p-md rounded-xl">
+<div class="flex justify-between items-center mb-base">
+<span class="font-label-md text-label-md text-primary">Alex</span>
+<span class="font-label-md text-label-md text-on-surface-variant opacity-60">Monday</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface">Finally finished that puzzle! 🧩 It only took us three weeks lol. We need a new one for the coffee table.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Interaction Bar -->
+<div class="fixed bottom-[84px] left-0 w-full px-margin-mobile z-40">
+<div class="max-w-[600px] mx-auto glass-card rounded-full p-2 flex items-center border border-white/40">
+<button class="p-2 text-primary hover:bg-white/40 transition-colors">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+</button>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-on-surface font-body-md px-base placeholder-on-surface-variant/50" placeholder="Write a note..." type="text"/>
+<button class="bg-primary text-on-primary p-2 rounded-full flex items-center justify-center bouncy-button shadow-lg">
+<span class="material-symbols-outlined" data-icon="send">send</span>
+</button>
+</div>
+</div>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter pb-4 pt-2 bg-surface/60 backdrop-blur-lg border-t border-white/20 rounded-t-2xl h-[72px]">
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all px-4 py-1 rounded-full active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all px-4 py-1 rounded-full active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="pets">pets</span>
+<span class="font-label-md text-label-md">Pet</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-full px-4 py-1 active:scale-90 duration-150 shadow-md">
+<span class="material-symbols-outlined" data-icon="menu_book" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span class="font-label-md text-label-md">Journal</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all px-4 py-1 rounded-full active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="casino">casino</span>
+<span class="font-label-md text-label-md">Game</span>
+</button>
+</nav>
+<script>
+        const input = document.querySelector('input');
+        const bar = input.closest('.max-w-\\[600px\\]');
+        
+        input.addEventListener('focus', () => {
+            bar.classList.add('scale-[1.02]');
+            bar.style.transition = 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        });
+        
+        input.addEventListener('blur', () => {
+            bar.classList.remove('scale-[1.02]');
+        });
+    </script>
+</body></html>

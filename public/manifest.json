@@ -1,0 +1,17 @@
+{
+  "name": "Petwo",
+  "short_name": "Petwo",
+  "description": "A little world for two.",
+  "start_url": "/auth",
+  "display": "standalone",
+  "background_color": "#f7f9fe",
+  "theme_color": "#346574",
+  "icons": [
+    {
+      "src": "/logo-petwo.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

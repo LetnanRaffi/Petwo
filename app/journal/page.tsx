@@ -1,0 +1,64 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import { Send } from "lucide-react";
+import { usePetwo } from "@/components/petwo-provider";
+import { AuthorName, EmptyRoom, PageTitle, TimelineAvatar, formatTime } from "@/components/ui";
+
+export default function JournalPage() {
+  const { room, journals, profile, partner, addJournal } = usePetwo();
+  const [content, setContent] = useState("");
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    await addJournal(content);
+    setContent("");
+  }
+
+  return (
+    <div className="space-y-5">
+      <PageTitle title="Shared Journal" subtitle="A simple timeline for notes from both of you." />
+      {!room ? <EmptyRoom /> : null}
+
+      <form className="glass-card rounded-2xl p-4" onSubmit={submit}>
+        <textarea
+          className="field min-h-28 resize-none"
+          placeholder="Write a small memory..."
+          value={content}
+          onChange={(event) => setContent(event.target.value)}
+          disabled={!room}
+        />
+        <button className="primary-button mt-3 flex w-full items-center justify-center gap-2" disabled={!room || !content.trim()}>
+          <Send size={17} />
+          Add note
+        </button>
+      </form>
+
+      <section className="relative space-y-5 before:absolute before:left-[21px] before:top-0 before:h-full before:w-0.5 before:bg-primary/10">
+        {journals.map((journal) => {
+          const name = journal.author_id === profile?.id ? profile?.name ?? "You" : partner?.name ?? "Partner";
+          return (
+            <article key={journal.id} className="relative pl-14">
+              <TimelineAvatar name={name} />
+              <div className="glass-card rounded-2xl p-4">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <p className="text-sm font-bold text-primary">
+                    <AuthorName
+                      id={journal.author_id}
+                      profileId={profile?.id}
+                      partnerId={partner?.id}
+                      profileName={profile?.name}
+                      partnerName={partner?.name}
+                    />
+                  </p>
+                  <time className="text-xs text-on-surface-variant">{formatTime(journal.created_at)}</time>
+                </div>
+                <p className="whitespace-pre-line text-sm leading-6">{journal.content}</p>
+              </div>
+            </article>
+          );
+        })}
+      </section>
+    </div>
+  );
+}

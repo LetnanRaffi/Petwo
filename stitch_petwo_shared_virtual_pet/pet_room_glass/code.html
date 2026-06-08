@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Petwo - Moci's Room</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;family=Be+Vietnam+Pro:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "inverse-on-surface": "#eef1f6",
+                "surface": "#f7f9fe",
+                "primary-fixed": "#b9eafd",
+                "on-secondary-fixed": "#1c1c17",
+                "secondary-container": "#e6e2d9",
+                "background": "#f7f9fe",
+                "on-tertiary-fixed-variant": "#514538",
+                "on-secondary": "#ffffff",
+                "primary": "#346574",
+                "outline-variant": "#c0c8cb",
+                "surface-container-high": "#e5e8ed",
+                "on-background": "#181c20",
+                "on-tertiary-fixed": "#231a0f",
+                "surface-container": "#ebeef3",
+                "on-primary-fixed": "#001f28",
+                "on-error-container": "#93000a",
+                "error": "#ba1a1a",
+                "on-tertiary": "#ffffff",
+                "on-surface": "#181c20",
+                "surface-container-highest": "#e0e3e7",
+                "outline": "#71787c",
+                "secondary-fixed-dim": "#c9c6be",
+                "surface-tint": "#346574",
+                "on-primary": "#ffffff",
+                "surface-bright": "#f7f9fe",
+                "inverse-surface": "#2d3135",
+                "error-container": "#ffdad6",
+                "secondary-fixed": "#e6e2d9",
+                "secondary": "#605e58",
+                "surface-container-low": "#f1f4f9",
+                "surface-dim": "#d7dadf",
+                "tertiary": "#6a5c4e",
+                "primary-container": "#a7d8ea",
+                "surface-container-lowest": "#ffffff",
+                "on-surface-variant": "#40484b",
+                "surface-variant": "#e0e3e7",
+                "on-secondary-fixed-variant": "#484741",
+                "tertiary-container": "#e0cdbc",
+                "inverse-primary": "#9dcee0",
+                "tertiary-fixed-dim": "#d6c3b3",
+                "on-tertiary-container": "#645649",
+                "on-primary-fixed-variant": "#184d5c",
+                "on-secondary-container": "#66645e",
+                "on-primary-container": "#2e5f6f",
+                "on-error": "#ffffff",
+                "primary-fixed-dim": "#9dcee0",
+                "tertiary-fixed": "#f3dfce"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "xl": "64px",
+                "margin-mobile": "16px",
+                "gutter": "24px",
+                "md": "24px",
+                "margin-desktop": "48px",
+                "sm": "12px",
+                "xs": "4px",
+                "lg": "40px",
+                "base": "8px"
+        },
+        "fontFamily": {
+                "label-sm": ["Be Vietnam Pro"],
+                "body-lg": ["Be Vietnam Pro"],
+                "headline-md": ["Plus Jakarta Sans"],
+                "headline-lg": ["Plus Jakarta Sans"],
+                "headline-lg-mobile": ["Plus Jakarta Sans"],
+                "body-md": ["Be Vietnam Pro"],
+                "label-md": ["Be Vietnam Pro"]
+        },
+        "fontSize": {
+                "label-sm": ["12px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                "headline-md": ["28px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                "headline-lg": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "headline-lg-mobile": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                "label-md": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}]
+        }
+    },
+    },
+  }
+</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .moci-float {
+            animation: float 4s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-15px) scale(1.02); }
+        }
+        .cloud-shadow {
+            box-shadow: 0 20px 40px -10px rgba(52, 101, 116, 0.1);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .bouncy-button {
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .bouncy-button:active {
+            transform: scale(0.92) translateY(2px);
+        }
+        body {
+            min-height: max(884px, 100dvh);
+            background: radial-gradient(circle at top right, #eef7fb, #f7f9fe);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex flex-col items-center overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top AppBar -->
+<header class="w-full top-0 z-40">
+<div class="flex justify-between items-center px-margin-mobile py-base w-full max-w-[1200px] mx-auto">
+<div class="flex items-center gap-2">
+<div class="relative flex items-center">
+<div class="w-10 h-10 rounded-full border-2 border-white bg-surface-container-high overflow-hidden z-10 shadow-sm">
+<img alt="" data-alt="Profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsEYaqyHqBf1X0uEw7fVGfHx7_CLgfK_ahSuMkEayoKUpnF2KhfMsZbht1sp6yoxnAYV_BqV_j42c46ZQ9Iek17KlWiOJrGZMqpm0q4-tiGJR_GE0fbpu082CrIJltYKQLIdHk9mEv6jmv0lA7kclamzvrNpo2Zydc_wUDq64EsDWBGyXgkLTcqZpjyN4LZsNSdBS3RMHvaLYO4Pq8qIcXDkDxOiqSDaTtMJbE9nEA7TzWFK7IIQJMOZpez6pTiy1yKwVBaHAr-Mw"/>
+</div>
+<div class="w-10 h-10 rounded-full border-2 border-white bg-primary-fixed overflow-hidden -ml-4 shadow-sm">
+<img alt="" data-alt="Partner avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuApk6MDs5bEpXKn1EJHVGR2kKbI1745M8Owv3TfWdV__PZnAv5p4axC30XZ6UoduJK8n6VPti0EnQ7F2DUMwpkKILiadfSdxCRdlGE-gYp88FhVH1Splh2y-OVNLt7D5717zdbFOp_pj7kCD0I7zs1JLoyIP880D0N2mUVah1qETMyueWx01X3Y5juW_wQJvr_KJWogGuk33f98XAuF5jPlFd6KrkQ-cikORj2sRCSjDiHyn_azhR8dIUeYs57O_gonO2FgKEA0Px0"/>
+</div>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary ml-2">Petwo</h1>
+</div>
+<button class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-white/40 transition-colors active:scale-95">
+<span class="material-symbols-outlined text-primary">favorite</span>
+</button>
+</div>
+</header>
+<main class="flex-1 w-full max-w-[600px] px-margin-mobile pt-sm pb-xl flex flex-col gap-md">
+<!-- Status Bars Section (Glassmorphism) -->
+<section class="grid grid-cols-2 gap-sm">
+<!-- Hunger -->
+<div class="glass-card p-sm rounded-xl flex flex-col gap-1 shadow-sm">
+<div class="flex justify-between items-center px-1">
+<span class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">restaurant</span> Hunger
+                    </span>
+<span class="font-label-md text-label-md text-primary">70%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest/50 rounded-full overflow-hidden">
+<div class="h-full bg-primary-container rounded-full" style="width: 70%"></div>
+</div>
+</div>
+<!-- Cleanliness -->
+<div class="glass-card p-sm rounded-xl flex flex-col gap-1 shadow-sm">
+<div class="flex justify-between items-center px-1">
+<span class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">soap</span> Clean
+                    </span>
+<span class="font-label-md text-label-md text-primary">90%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest/50 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 90%"></div>
+</div>
+</div>
+<!-- Energy -->
+<div class="glass-card p-sm rounded-xl flex flex-col gap-1 shadow-sm">
+<div class="flex justify-between items-center px-1">
+<span class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">bolt</span> Energy
+                    </span>
+<span class="font-label-md text-label-md text-primary">45%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest/50 rounded-full overflow-hidden">
+<div class="h-full bg-primary-container rounded-full" style="width: 45%"></div>
+</div>
+</div>
+<!-- Happiness -->
+<div class="glass-card p-sm rounded-xl flex flex-col gap-1 shadow-sm">
+<div class="flex justify-between items-center px-1">
+<span class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">favorite</span> Happy
+                    </span>
+<span class="font-label-md text-label-md text-primary">100%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest/50 rounded-full overflow-hidden">
+<div class="h-full bg-primary-container rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</section>
+<!-- Moci's Room Canvas -->
+<section class="relative w-full aspect-square max-h-[400px] bg-gradient-to-b from-surface-container-low to-surface-container rounded-[32px] border border-white/60 cloud-shadow overflow-hidden flex flex-col items-center justify-end pb-xl">
+<!-- Room Background Decoration -->
+<div class="absolute top-12 left-12 w-16 h-16 opacity-10 rotate-12">
+<span class="material-symbols-outlined text-[64px] text-primary">potted_plant</span>
+</div>
+<div class="absolute top-8 right-12 w-32 h-16 bg-white/60 rounded-full blur-2xl"></div>
+<!-- Soft Blue Glow Background for Pet -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-primary-fixed-dim/30 rounded-full blur-3xl"></div>
+<!-- Moci Character -->
+<div class="moci-float relative z-10 flex flex-col items-center cursor-pointer group" onclick="playInteraction()">
+<div class="absolute -top-12 opacity-0 pointer-events-none transition-all duration-500 flex gap-2" id="heart-burst">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</div>
+<!-- Moci Shape (Preserving Appearance) -->
+<div class="w-48 h-40 bg-secondary-container rounded-[45%_55%_70%_30%_/_55%_40%_60%_45%] relative shadow-[inset_-10px_-10px_20px_rgba(0,0,0,0.05)] border-4 border-white/50">
+<div class="absolute top-1/2 left-1/4 w-3 h-4 bg-on-surface rounded-full"></div>
+<div class="absolute top-1/2 right-1/4 w-3 h-4 bg-on-surface rounded-full"></div>
+<div class="absolute top-[60%] left-[15%] w-4 h-2 bg-error/10 rounded-full blur-[2px]"></div>
+<div class="absolute top-[60%] right-[15%] w-4 h-2 bg-error/10 rounded-full blur-[2px]"></div>
+<div class="absolute top-[65%] left-1/2 -translate-x-1/2 w-4 h-2 border-b-2 border-on-surface rounded-full"></div>
+</div>
+<div class="w-32 h-6 bg-on-surface/5 rounded-full mt-4 blur-sm"></div>
+</div>
+<!-- Activity Feed Toast (Glassmorphism) -->
+<div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] glass-card rounded-2xl p-3 shadow-sm flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container/80 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary-container text-[18px]">history</span>
+</div>
+<div class="overflow-hidden h-6">
+<div class="activity-scroll flex flex-col gap-4">
+<p class="font-label-md text-label-md text-on-surface-variant truncate">Partner fed Moci 🍖</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Action Grid (Glassmorphism) -->
+<section class="grid grid-cols-4 gap-sm">
+<button class="bouncy-button glass-card rounded-2xl p-4 flex flex-col items-center justify-center gap-2 hover:bg-white/60 transition-colors shadow-sm">
+<div class="w-12 h-12 rounded-full bg-primary-fixed/80 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-fixed">restaurant</span>
+</div>
+<span class="font-label-md text-label-md text-primary">Feed</span>
+</button>
+<button class="bouncy-button glass-card rounded-2xl p-4 flex flex-col items-center justify-center gap-2 hover:bg-white/60 transition-colors shadow-sm">
+<div class="w-12 h-12 rounded-full bg-primary-fixed-dim/80 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-fixed">bathtub</span>
+</div>
+<span class="font-label-md text-label-md text-primary">Bath</span>
+</button>
+<button class="bouncy-button glass-card rounded-2xl p-4 flex flex-col items-center justify-center gap-2 hover:bg-white/60 transition-colors shadow-sm">
+<div class="w-12 h-12 rounded-full bg-primary-fixed/80 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-fixed">sports_esports</span>
+</div>
+<span class="font-label-md text-label-md text-primary">Play</span>
+</button>
+<button class="bouncy-button glass-card rounded-2xl p-4 flex flex-col items-center justify-center gap-2 hover:bg-white/60 transition-colors shadow-sm">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest/80 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">bedtime</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Sleep</span>
+</button>
+</section>
+</main>
+<!-- Navigation Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter pb-6 pt-3 bg-white/80 backdrop-blur-lg border-t border-white shadow-[0_-8px_24px_rgba(52,101,116,0.05)] rounded-t-[24px]">
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-all p-2 rounded-xl">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-full px-5 py-1.5 hover:bg-primary-fixed-variant transition-all shadow-md">
+<span class="material-symbols-outlined">pets</span>
+<span class="font-label-md text-label-md">Pet</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-all p-2 rounded-xl">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-label-md text-label-md">Journal</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-all p-2 rounded-xl">
+<span class="material-symbols-outlined">casino</span>
+<span class="font-label-md text-label-md">Game</span>
+</button>
+</nav>
+<script>
+        function playInteraction() {
+            const heart = document.getElementById('heart-burst');
+            heart.style.opacity = '1';
+            heart.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+                heart.style.opacity = '0';
+                heart.style.transform = 'translateY(0px)';
+            }, 600);
+        }
+        const activities = [
+            "Partner fed Moci 🍖",
+            "Moci is feeling sleepy 💤",
+            "You played Fetch! +10 XP 🎾",
+            "Moci loves the new room color! ✨"
+        ];
+        let currentActivity = 0;
+        const feedElement = document.querySelector('.activity-scroll');
+        setInterval(() => {
+            currentActivity = (currentActivity + 1) % activities.length;
+            feedElement.style.transition = 'transform 0.5s ease-in-out';
+            feedElement.innerHTML = `<p class="font-label-md text-label-md text-on-surface-variant truncate">${activities[currentActivity]}</p>`;
+        }, 5000);
+    </script>
+</body></html>
