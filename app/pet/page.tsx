@@ -14,6 +14,7 @@ export default function PetPage() {
   const { pet, pets, selectedPetId, egg, room, doPetAction, selectPet } = usePetwo();
   const [pendingAction, setPendingAction] = useState<PetAction | null>(null);
   const [visualState, setVisualState] = useState<PetVisualState>("idle");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     if (visualState === "idle") return;
@@ -25,9 +26,13 @@ export default function PetPage() {
   async function handlePetAction(action: PetAction) {
     if (pendingAction) return;
     setPendingAction(action);
+    setMessage("");
     try {
       await doPetAction(action);
       setVisualState(petActionVisualState(action));
+      setMessage(`${careActionLabel(action, getPetDisplayName(pet?.name))} saved.`);
+    } catch {
+      setMessage("Could not save pet action. Try again.");
     } finally {
       setPendingAction(null);
     }
@@ -63,6 +68,7 @@ export default function PetPage() {
   return (
     <div className="space-y-5">
       <PageTitle title={`${petName}'s room`} subtitle={`Care actions keep ${petName} cozy. Food and drinks can also be bought from Shop.`} />
+      {message ? <p className="glass-card rounded-2xl p-4 text-sm font-bold text-primary">{message}</p> : null}
 
       {pets.length > 1 ? (
         <section className="glass-card rounded-2xl p-4">
@@ -120,7 +126,7 @@ export default function PetPage() {
             disabled={Boolean(pendingAction)}
           >
             <span>{petActions[action].icon}</span>
-            {careActionLabel(action, petName)}
+            {pendingAction === action ? "Saving..." : careActionLabel(action, petName)}
           </button>
         ))}
       </section>

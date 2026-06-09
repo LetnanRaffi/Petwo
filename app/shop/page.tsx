@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Coins, ShoppingBag } from "lucide-react";
 import { PageTitle } from "@/components/ui";
 import { usePetwo } from "@/components/petwo-provider";
@@ -15,7 +16,19 @@ const categoryLabels: Record<ShopCategory, string> = {
 
 export default function ShopPage() {
   const { room, pet, wallet, buyShopItem } = usePetwo();
+  const [message, setMessage] = useState("");
+  const [buyingId, setBuyingId] = useState<string | null>(null);
   const petName = getPetDisplayName(pet?.name);
+
+  async function handleBuy(itemId: string, itemName: string) {
+    if (buyingId) return;
+
+    setBuyingId(itemId);
+    setMessage("");
+    const bought = await buyShopItem(itemId);
+    setMessage(bought ? `${itemName} applied to ${petName}.` : "Could not buy item. Check coins and pet status.");
+    setBuyingId(null);
+  }
 
   return (
     <div className="space-y-5">
@@ -31,6 +44,7 @@ export default function ShopPage() {
 
       {!room ? <p className="glass-card rounded-2xl p-5 text-sm font-semibold text-on-surface-variant">Connect with someone before using the shop.</p> : null}
       {room && !pet ? <p className="glass-card rounded-2xl p-5 text-sm font-semibold text-on-surface-variant">Hatch your egg first. Shop items apply directly to your pet for now.</p> : null}
+      {message ? <p className="glass-card rounded-2xl p-4 text-sm font-bold text-primary">{message}</p> : null}
 
       {(Object.keys(categoryLabels) as ShopCategory[]).map((category) => (
         <section key={category} className="glass-card rounded-2xl p-5">
@@ -46,12 +60,12 @@ export default function ShopPage() {
                   </div>
                   <button
                     className="soft-button flex items-center gap-2 px-3 py-2"
-                    onClick={() => buyShopItem(item.id)}
-                    disabled={!pet || (wallet?.coins ?? 0) < item.price}
+                    onClick={() => handleBuy(item.id, item.name)}
+                    disabled={!pet || (wallet?.coins ?? 0) < item.price || Boolean(buyingId)}
                     aria-label={pet ? `Buy ${item.name} for ${petName}` : `Buy ${item.name}`}
                   >
                     <ShoppingBag size={16} />
-                    {item.price}
+                    {buyingId === item.id ? "..." : item.price}
                   </button>
                 </div>
               ))}

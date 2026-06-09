@@ -9,6 +9,7 @@ export default function JournalPage() {
   const { room, journals, profile, partner, addJournal } = usePetwo();
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -17,9 +18,13 @@ export default function JournalPage() {
     const nextContent = content;
     setContent("");
     setSubmitting(true);
+    setMessage("");
     try {
       const saved = await addJournal(nextContent);
-      if (!saved) setContent(nextContent);
+      if (!saved) {
+        setContent(nextContent);
+        setMessage("Could not save journal note. Try again.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -40,8 +45,9 @@ export default function JournalPage() {
         />
         <button className="primary-button mt-3 flex w-full items-center justify-center gap-2" disabled={!room || !content.trim() || submitting}>
           <Send size={17} />
-          Add note
+          {submitting ? "Saving..." : "Add note"}
         </button>
+        {message ? <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">{message}</p> : null}
       </form>
 
       <section className="relative space-y-5 before:absolute before:left-[21px] before:top-0 before:h-full before:w-0.5 before:bg-primary/10">

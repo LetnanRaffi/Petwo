@@ -31,6 +31,8 @@ export default function DashboardPage() {
     session,
   } = usePetwo();
   const [inviteCode, setInviteCode] = useState("");
+  const [roomMessage, setRoomMessage] = useState("");
+  const [roomBusy, setRoomBusy] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
   const myMoodToday = moodRows.find((item) => item.user_id === profile?.id && item.mood_date === today);
@@ -44,8 +46,33 @@ export default function DashboardPage() {
 
   async function submitJoin(event: FormEvent) {
     event.preventDefault();
-    await joinRoom(inviteCode);
-    setInviteCode("");
+    if (roomBusy) return;
+
+    setRoomBusy(true);
+    setRoomMessage("");
+    const result = await joinRoom(inviteCode);
+    setRoomMessage(result.message ?? (result.ok ? "Joined room." : "Could not join room."));
+    if (result.ok) setInviteCode("");
+    setRoomBusy(false);
+  }
+
+  async function handleCreateRoom() {
+    if (roomBusy) return;
+
+    setRoomBusy(true);
+    setRoomMessage("");
+    const result = await createRoom();
+    setRoomMessage(result.message ?? (result.ok ? "Invite code created." : "Could not create invite code."));
+    setRoomBusy(false);
+  }
+
+  async function copyInviteCode(code: string) {
+    try {
+      await navigator.clipboard?.writeText(code);
+      setRoomMessage("Invite code copied.");
+    } catch {
+      setRoomMessage("Could not copy invite code. Select it manually.");
+    }
   }
 
   if (!room) {
@@ -59,16 +86,17 @@ export default function DashboardPage() {
             <p className="mt-2 text-sm leading-6 text-on-primary-container/80">Connect with someone first. Your shared egg appears when both of you are in the room.</p>
           </div>
           <div className="mt-4 grid gap-3">
-            <button className="primary-button flex items-center justify-center gap-2" onClick={createRoom} disabled={!session}>
+            <button className="primary-button flex items-center justify-center gap-2" onClick={handleCreateRoom} disabled={!session || roomBusy}>
               <Send size={17} />
-              Create Invite Code
+              {roomBusy ? "Working..." : "Create Invite Code"}
             </button>
             <form className="grid gap-3 sm:grid-cols-[1fr_auto]" onSubmit={submitJoin}>
-              <input className="field uppercase" placeholder="Invite code" value={inviteCode} onChange={(event) => setInviteCode(event.target.value)} disabled={!session} />
-              <button className="soft-button px-5" disabled={!session || !inviteCode.trim()}>
-                Join With Code
+              <input className="field uppercase" placeholder="Invite code" value={inviteCode} onChange={(event) => setInviteCode(event.target.value)} disabled={!session || roomBusy} />
+              <button className="soft-button px-5" disabled={!session || !inviteCode.trim() || roomBusy}>
+                {roomBusy ? "Joining..." : "Join With Code"}
               </button>
             </form>
+            {roomMessage ? <p className="rounded-xl bg-white/55 px-3 py-2 text-xs font-bold text-primary">{roomMessage}</p> : null}
           </div>
         </section>
       </div>
@@ -83,10 +111,11 @@ export default function DashboardPage() {
           <p className="text-xs font-bold uppercase tracking-wider text-primary/80">Invite code</p>
           <div className="mt-3 flex items-center justify-between gap-3">
             <code className="font-headline text-4xl font-bold text-primary">{room.invite_code}</code>
-            <button className="soft-button px-3 py-2" onClick={() => navigator.clipboard?.writeText(room.invite_code)} aria-label="Copy invite code">
+            <button className="soft-button px-3 py-2" onClick={() => copyInviteCode(room.invite_code)} aria-label="Copy invite code">
               <Copy size={17} />
             </button>
           </div>
+          {roomMessage ? <p className="mt-3 rounded-xl bg-white/55 px-3 py-2 text-xs font-bold text-primary">{roomMessage}</p> : null}
         </section>
       </div>
     );

@@ -111,6 +111,37 @@ export type GameEvent = {
   created_at: string;
 };
 
+export type QuizSession = {
+  id: string;
+  room_id: string;
+  host_id: string;
+  player_one_id: string;
+  player_two_id: string | null;
+  status: "lobby" | "active" | "completed" | "expired";
+  current_question_index: number;
+  question_ids: string[];
+  started_at: string | null;
+  question_started_at: string | null;
+  completed_at: string | null;
+  expires_at: string;
+  reward_claimed: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type QuizAnswer = {
+  id: string;
+  session_id: string;
+  room_id: string;
+  user_id: string;
+  question_id: string;
+  selected_index: number | null;
+  is_correct: boolean;
+  score: number;
+  response_ms: number | null;
+  answered_at: string;
+};
+
 export type AppState = {
   profile: Profile | null;
   room: Room | null;

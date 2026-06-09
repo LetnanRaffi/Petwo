@@ -6,7 +6,7 @@ import { applyPetAction, clamp, petActions, type PetAction } from "@/lib/pet-act
 import { getPetDisplayName } from "@/lib/pet-assets";
 import { getShopItem } from "@/lib/shop";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
-import type { Activity, AppState, Egg, GameEvent, Journal, Mission, MissionTaskType, Mood, Pet, Profile, Room, RoomWallet } from "@/lib/types";
+import type { Activity, AppState, Egg, GameEvent, Journal, Mission, MissionTaskType, Mood, Pet, Profile, QuizAnswer, Room, RoomWallet } from "@/lib/types";
 
 export type OnboardingInput = {
   displayName: string;
@@ -14,17 +14,23 @@ export type OnboardingInput = {
   relationshipType: string;
 };
 
+export type ActionResult = {
+  ok: boolean;
+  message?: string;
+};
+
 type PetwoContextValue = AppState & {
   loading: boolean;
   session: Session | null;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
-  createRoom: () => Promise<void>;
-  joinRoom: (inviteCode: string) => Promise<void>;
+  createRoom: () => Promise<ActionResult>;
+  joinRoom: (inviteCode: string) => Promise<ActionResult>;
   doPetAction: (action: PetAction) => Promise<void>;
   updateMood: (mood: string) => Promise<void>;
   addJournal: (content: string) => Promise<boolean>;
   playTruthOrDare: (prompt: string) => Promise<void>;
+  completeCoupleQuiz: (sessionId: string, playerOneScore: number, playerTwoScore: number) => Promise<boolean>;
   buyShopItem: (itemId: string) => Promise<boolean>;
   renamePet: (name: string) => Promise<boolean>;
   selectPet: (petId: string) => void;
@@ -85,6 +91,12 @@ function missionLabel(taskType: MissionTaskType, petName: string) {
     bath_pet: `Bath ${petName}`,
   };
   return labels[taskType];
+}
+
+function getOAuthRedirectUrl() {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const baseUrl = siteUrl || (typeof window !== "undefined" ? window.location.origin : "");
+  return `${baseUrl.replace(/\/$/, "")}/onboarding`;
 }
 
 export function PetwoProvider({ children }: { children: React.ReactNode }) {
@@ -182,7 +194,7 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
     if (existing) return existing as Egg;
 
     const startedAt = new Date();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("eggs")
       .insert({
         room_id: roomId,
@@ -194,6 +206,11 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
       })
       .select()
       .single();
+
+    if (error) {
+      const { data: fallback } = await supabase.from("eggs").select("*").eq("room_id", roomId).maybeSingle();
+      return fallback as Egg | null;
+    }
 
     if (data) await insertActivity(roomId, actorId, "egg_created", "A shared mystery egg appeared.");
     return data as Egg | null;
@@ -302,32 +319,6 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
 
   const addCoins = useCallback(async (roomId: string, amount: number, actorId: string | null, reason: string) => {
     if (!supabase || amount <= 0) return null;
-
-    const optimisticTime = new Date().toISOString();
-    setState((prev) => {
-      if (prev.room?.id !== roomId) return prev;
-
-      const wallet =
-        prev.wallet ??
-        ({
-          id: `local-${roomId}`,
-          room_id: roomId,
-          coins: 0,
-          total_earned: 0,
-          created_at: optimisticTime,
-          updated_at: optimisticTime,
-        } satisfies RoomWallet);
-
-      return {
-        ...prev,
-        wallet: {
-          ...wallet,
-          coins: wallet.coins + amount,
-          total_earned: wallet.total_earned + amount,
-          updated_at: optimisticTime,
-        },
-      };
-    });
 
     let data: RoomWallet | null = null;
     const { data: incremented, error } = await supabase.rpc("increment_room_wallet", { target_room_id: roomId, amount });
@@ -549,8 +540,9 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
       .from("missions")
       .update({ status: "completed", completed_at: new Date().toISOString() })
       .eq("id", mission.id)
+      .eq("status", "pending")
       .select()
-      .single();
+      .maybeSingle();
     if (!data) return;
 
     setState((prev) => ({ ...prev, missions: prev.missions.map((item) => (item.id === mission.id ? (data as Mission) : item)) }));
@@ -575,7 +567,7 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(async () => {
     if (!supabase) return;
-    await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}/onboarding` } });
+    await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: getOAuthRedirectUrl() } });
   }, []);
 
   const signOut = useCallback(async () => {
@@ -587,32 +579,60 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const createRoom = useCallback(async () => {
-    if (!supabase || !session) return;
+    if (!supabase || !session) return { ok: false, message: "Sign in before creating a room." };
+
+    const { data: existingMember } = await supabase.from("room_members").select("room_id").eq("user_id", session.user.id).maybeSingle();
+    if (existingMember?.room_id) {
+      await loadState(session);
+      return { ok: true, message: "You already have a room." };
+    }
 
     const inviteCode = crypto.randomUUID().slice(0, 6).toUpperCase();
     const { data: roomData, error } = await supabase.from("rooms").insert({ invite_code: inviteCode, owner_id: session.user.id }).select().single();
-    if (error || !roomData) return;
+    if (error || !roomData) return { ok: false, message: "Could not create invite code. Try again." };
 
-    await supabase.from("room_members").insert({ room_id: roomData.id, user_id: session.user.id });
+    const { error: memberError } = await supabase.from("room_members").insert({ room_id: roomData.id, user_id: session.user.id });
+    if (memberError) return { ok: false, message: "Room was created, but membership failed. Refresh and try again." };
     await ensureWallet(roomData.id);
     await insertActivity(roomData.id, session.user.id, "room_created", "Room created. Invite someone to start your little world.");
     await loadState(session);
+    return { ok: true, message: "Invite code created." };
   }, [ensureWallet, insertActivity, loadState, session]);
 
   const joinRoom = useCallback(async (inviteCode: string) => {
-    if (!supabase || !session) return;
+    if (!supabase || !session) return { ok: false, message: "Sign in before joining a room." };
 
     const code = inviteCode.trim().toUpperCase();
-    const { data: roomData } = await supabase.from("rooms").select("*").eq("invite_code", code).maybeSingle();
-    if (!roomData || roomData.owner_id === session.user.id || roomData.partner_id) return;
+    if (!code) return { ok: false, message: "Enter an invite code first." };
 
-    await supabase.from("rooms").update({ partner_id: session.user.id }).eq("id", roomData.id);
-    await supabase.from("room_members").insert({ room_id: roomData.id, user_id: session.user.id });
+    const { data: existingMember } = await supabase.from("room_members").select("room_id").eq("user_id", session.user.id).maybeSingle();
+    if (existingMember?.room_id) {
+      await loadState(session);
+      return { ok: true, message: "You already have a room." };
+    }
+
+    const { data: roomData } = await supabase.from("rooms").select("*").eq("invite_code", code).maybeSingle();
+    if (!roomData) return { ok: false, message: "Invite code not found." };
+    if (roomData.owner_id === session.user.id) return { ok: false, message: "You cannot join your own invite code." };
+    if (roomData.partner_id) return { ok: false, message: "This room is already full." };
+
+    const { data: joinedRoom, error: joinError } = await supabase
+      .from("rooms")
+      .update({ partner_id: session.user.id })
+      .eq("id", roomData.id)
+      .is("partner_id", null)
+      .select()
+      .maybeSingle();
+    if (joinError || !joinedRoom) return { ok: false, message: "Someone already joined this room. Ask for a new code." };
+
+    const { error: memberError } = await supabase.from("room_members").insert({ room_id: roomData.id, user_id: session.user.id });
+    if (memberError) return { ok: false, message: "Could not join room membership. Try again." };
     await ensureWallet(roomData.id);
     await insertActivity(roomData.id, session.user.id, "user_joined_room", "A partner joined the room 💙");
     const egg = await ensureEgg(roomData.id, session.user.id);
     await addHatchProgress(roomData.id, 15, session.user.id, "Partner joined", egg);
     await loadState(session);
+    return { ok: true, message: "Joined room." };
   }, [addHatchProgress, ensureEgg, ensureWallet, insertActivity, loadState, session]);
 
   const doPetAction = useCallback(async (action: PetAction) => {
@@ -701,6 +721,81 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
     await completeMission("truth_or_dare_played");
   }, [addCoins, addHatchProgress, completeMission, insertActivity, maybeAwardCoupleSyncBonus, session, state.profile, state.room]);
 
+  const completeCoupleQuiz = useCallback(async (sessionId: string, playerOneScore: number, playerTwoScore: number) => {
+    if (!supabase || !session || !state.room || !state.profile) return false;
+
+    const { data: quizSession } = await supabase
+      .from("quiz_sessions")
+      .select("id, player_one_id, player_two_id, reward_claimed")
+      .eq("id", sessionId)
+      .eq("room_id", state.room.id)
+      .maybeSingle();
+    if (!quizSession || quizSession.reward_claimed) return false;
+
+    const { data: answerRows } = await supabase.from("quiz_answers").select("*").eq("session_id", sessionId).eq("room_id", state.room.id);
+    const quizAnswers = (answerRows ?? []) as QuizAnswer[];
+    const freshPlayerOneScore = quizAnswers
+      .filter((answer) => answer.user_id === quizSession.player_one_id)
+      .reduce((total, answer) => total + answer.score, 0);
+    const freshPlayerTwoScore = quizAnswers
+      .filter((answer) => answer.user_id === quizSession.player_two_id)
+      .reduce((total, answer) => total + answer.score, 0);
+    const finalPlayerOneScore = freshPlayerOneScore || playerOneScore;
+    const finalPlayerTwoScore = freshPlayerTwoScore || playerTwoScore;
+    const totalScore = Math.max(0, finalPlayerOneScore + finalPlayerTwoScore);
+    const maxScore = 3000;
+    const boost = 10 + Math.round(Math.min(1, totalScore / maxScore) * 20);
+    const { data: claimed } = await supabase
+      .from("quiz_sessions")
+      .update({ reward_claimed: true, updated_at: new Date().toISOString() })
+      .eq("id", sessionId)
+      .eq("room_id", state.room.id)
+      .eq("reward_claimed", false)
+      .select()
+      .maybeSingle();
+
+    if (!claimed) return false;
+
+    await supabase
+      .from("game_events")
+      .insert({
+        room_id: state.room.id,
+        actor_id: state.profile.id,
+        game_type: "couple_quiz",
+        result: `Score ${finalPlayerOneScore}-${finalPlayerTwoScore}`,
+      });
+
+    if (state.egg && state.egg.status !== "hatched") {
+      await addHatchProgress(state.room.id, boost, state.profile.id, "Couple Quiz");
+      await insertActivity(state.room.id, state.profile.id, "couple_quiz_completed", `Couple Quiz made the egg glow brighter +${boost}%`);
+      return true;
+    }
+
+    if (state.pet) {
+      const nextXp = state.pet.xp + boost;
+      const leveled = nextXp >= 100;
+      const nextPet = {
+        happiness: clamp(state.pet.happiness + Math.round(boost / 2)),
+        xp: leveled ? nextXp - 100 : nextXp,
+        level: leveled ? state.pet.level + 1 : state.pet.level,
+        updated_at: new Date().toISOString(),
+      };
+      const { data: pet } = await supabase.from("pets").update(nextPet).eq("id", state.pet.id).select().single();
+      if (pet) {
+        setState((prev) => ({
+          ...prev,
+          pet: pet as Pet,
+          pets: prev.pets.map((item) => (item.id === (pet as Pet).id ? (pet as Pet) : item)),
+        }));
+      }
+      await insertActivity(state.room.id, state.profile.id, "couple_quiz_completed", `Couple Quiz boosted ${getPetDisplayName(state.pet.name)}'s happiness and XP`);
+      return true;
+    }
+
+    await insertActivity(state.room.id, state.profile.id, "couple_quiz_completed", "Couple Quiz finished. You learned a little more together.");
+    return true;
+  }, [addHatchProgress, insertActivity, session, state.egg, state.pet, state.profile, state.room]);
+
   const buyShopItem = useCallback(async (itemId: string) => {
     if (!supabase || !session || !state.room || !state.profile || !state.pet || !state.wallet) return false;
 
@@ -766,13 +861,14 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
       updateMood,
       addJournal,
       playTruthOrDare,
+      completeCoupleQuiz,
       buyShopItem,
       renamePet,
       selectPet,
       completeOnboarding,
       refresh: () => loadState(session),
     }),
-    [loading, session, state, signIn, signOut, createRoom, joinRoom, doPetAction, updateMood, addJournal, playTruthOrDare, buyShopItem, renamePet, selectPet, completeOnboarding, loadState],
+    [loading, session, state, signIn, signOut, createRoom, joinRoom, doPetAction, updateMood, addJournal, playTruthOrDare, completeCoupleQuiz, buyShopItem, renamePet, selectPet, completeOnboarding, loadState],
   );
 
   if (!isSupabaseConfigured) return <SetupErrorScreen />;
