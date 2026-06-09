@@ -29,7 +29,7 @@ export default function AuthPage() {
         <div className="rounded-2xl border border-white/70 bg-white/80 p-6 shadow-cloud backdrop-blur-xl">
           <div className="mb-5 text-center">
             <h2 className="font-headline text-2xl font-bold">Welcome back</h2>
-            <p className="mt-1 text-sm text-on-surface-variant">Sign in to care for Moci together.</p>
+            <p className="mt-1 text-sm text-on-surface-variant">Sign in to care for your pet together.</p>
           </div>
           <button className="soft-button flex w-full items-center justify-center gap-3 bg-white/85 text-on-surface" onClick={signIn}>
             <GoogleIcon />

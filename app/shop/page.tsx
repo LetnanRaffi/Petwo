@@ -3,6 +3,7 @@
 import { Coins, ShoppingBag } from "lucide-react";
 import { PageTitle } from "@/components/ui";
 import { usePetwo } from "@/components/petwo-provider";
+import { getPetDisplayName } from "@/lib/pet-assets";
 import { shopItems, type ShopCategory } from "@/lib/shop";
 
 const categoryLabels: Record<ShopCategory, string> = {
@@ -14,6 +15,7 @@ const categoryLabels: Record<ShopCategory, string> = {
 
 export default function ShopPage() {
   const { room, pet, wallet, buyShopItem } = usePetwo();
+  const petName = getPetDisplayName(pet?.name);
 
   return (
     <div className="space-y-5">
@@ -28,7 +30,7 @@ export default function ShopPage() {
       </section>
 
       {!room ? <p className="glass-card rounded-2xl p-5 text-sm font-semibold text-on-surface-variant">Connect with someone before using the shop.</p> : null}
-      {room && !pet ? <p className="glass-card rounded-2xl p-5 text-sm font-semibold text-on-surface-variant">Hatch your egg first. Shop items apply directly to Moci for now.</p> : null}
+      {room && !pet ? <p className="glass-card rounded-2xl p-5 text-sm font-semibold text-on-surface-variant">Hatch your egg first. Shop items apply directly to your pet for now.</p> : null}
 
       {(Object.keys(categoryLabels) as ShopCategory[]).map((category) => (
         <section key={category} className="glass-card rounded-2xl p-5">
@@ -42,7 +44,12 @@ export default function ShopPage() {
                     <p className="text-sm font-bold text-on-surface">{item.name}</p>
                     <p className="text-xs font-semibold text-on-surface-variant">{describeEffect(item.effect)}</p>
                   </div>
-                  <button className="soft-button flex items-center gap-2 px-3 py-2" onClick={() => buyShopItem(item.id)} disabled={!pet || (wallet?.coins ?? 0) < item.price}>
+                  <button
+                    className="soft-button flex items-center gap-2 px-3 py-2"
+                    onClick={() => buyShopItem(item.id)}
+                    disabled={!pet || (wallet?.coins ?? 0) < item.price}
+                    aria-label={pet ? `Buy ${item.name} for ${petName}` : `Buy ${item.name}`}
+                  >
                     <ShoppingBag size={16} />
                     {item.price}
                   </button>

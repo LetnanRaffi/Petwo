@@ -53,8 +53,8 @@ create table if not exists public.eggs (
 
 create table if not exists public.pets (
   id uuid primary key default gen_random_uuid(),
-  room_id uuid not null unique references public.rooms(id) on delete cascade,
-  name text not null default 'Moci',
+  room_id uuid not null references public.rooms(id) on delete cascade,
+  name text not null default 'Unnamed Pet',
   pet_type text not null default 'cat',
   hunger int not null default 80 check (hunger between 0 and 100),
   thirst int not null default 80 check (thirst between 0 and 100),
@@ -67,6 +67,9 @@ create table if not exists public.pets (
 );
 
 alter table public.pets add column if not exists thirst int not null default 80 check (thirst between 0 and 100);
+alter table public.pets drop constraint if exists pets_room_id_key;
+drop index if exists public.pets_room_id_key;
+create index if not exists pets_room_id_idx on public.pets(room_id);
 do $$
 begin
   alter table public.eggs add constraint eggs_pet_id_fkey foreign key (pet_id) references public.pets(id) on delete set null not valid;
@@ -155,6 +158,35 @@ as $$
     select 1 from public.room_members
     where room_id = target_room_id and user_id = auth.uid()
   );
+$$;
+
+create or replace function public.increment_room_wallet(target_room_id uuid, amount int)
+returns public.room_wallets
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_wallet public.room_wallets;
+begin
+  if amount <= 0 then
+    raise exception 'amount must be positive';
+  end if;
+
+  if not public.is_room_member(target_room_id) then
+    raise exception 'not a room member';
+  end if;
+
+  insert into public.room_wallets (room_id, coins, total_earned)
+  values (target_room_id, amount, amount)
+  on conflict (room_id) do update
+    set coins = public.room_wallets.coins + excluded.coins,
+        total_earned = public.room_wallets.total_earned + excluded.total_earned,
+        updated_at = now()
+  returning * into updated_wallet;
+
+  return updated_wallet;
+end;
 $$;
 
 drop policy if exists "profiles are readable by authenticated users" on public.profiles;

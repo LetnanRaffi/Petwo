@@ -8,11 +8,21 @@ import { AuthorName, EmptyRoom, PageTitle, TimelineAvatar, formatTime } from "@/
 export default function JournalPage() {
   const { room, journals, profile, partner, addJournal } = usePetwo();
   const [content, setContent] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    await addJournal(content);
+    if (!content.trim() || submitting) return;
+
+    const nextContent = content;
     setContent("");
+    setSubmitting(true);
+    try {
+      const saved = await addJournal(nextContent);
+      if (!saved) setContent(nextContent);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -26,9 +36,9 @@ export default function JournalPage() {
           placeholder="Write a small memory..."
           value={content}
           onChange={(event) => setContent(event.target.value)}
-          disabled={!room}
+          disabled={!room || submitting}
         />
-        <button className="primary-button mt-3 flex w-full items-center justify-center gap-2" disabled={!room || !content.trim()}>
+        <button className="primary-button mt-3 flex w-full items-center justify-center gap-2" disabled={!room || !content.trim() || submitting}>
           <Send size={17} />
           Add note
         </button>

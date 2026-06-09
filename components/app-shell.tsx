@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BookHeart, Gamepad2, Heart, Home, PawPrint, Settings, ShoppingBag } from "lucide-react";
+import { EggDisplay } from "./egg-display";
 import { PetwoProvider, usePetwo } from "./petwo-provider";
+import { getPetDisplayName } from "@/lib/pet-assets";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -26,9 +28,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 function ShellChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { profile, partner, session, loading } = usePetwo();
+  const { profile, partner, pet, session, loading, renamePet } = usePetwo();
+  const [petName, setPetName] = useState("");
+  const [savingName, setSavingName] = useState(false);
   const isAuth = pathname === "/auth";
   const isOnboarding = pathname === "/onboarding";
+  const shouldNamePet = Boolean(pet && getPetDisplayName(pet.name) === "Unnamed Pet" && !isAuth && !isOnboarding);
+
+  async function submitPetName(event: FormEvent) {
+    event.preventDefault();
+    if (!petName.trim() || savingName) return;
+
+    setSavingName(true);
+    const saved = await renamePet(petName);
+    if (saved) setPetName("");
+    setSavingName(false);
+  }
 
   useEffect(() => {
     if (loading) return;
@@ -52,7 +67,7 @@ function ShellChrome({ children }: { children: React.ReactNode }) {
   if (isOnboarding && session && !profile?.onboarding_completed) return <>{children}</>;
 
   if (loading) {
-    return <PetwoLoading />;
+    return null;
   }
 
   if (!session) {
@@ -91,6 +106,28 @@ function ShellChrome({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="mx-auto w-full max-w-3xl px-4 py-5">{children}</main>
+      {shouldNamePet ? (
+        <div className="fixed inset-0 z-[70] grid place-items-center bg-surface/75 px-4 backdrop-blur-md">
+          <form onSubmit={submitPetName} className="glass-card w-full max-w-sm rounded-2xl p-5 text-center">
+            <div className="mx-auto h-40 w-40">
+              <EggDisplay state="hatching" />
+            </div>
+            <h2 className="mt-4 font-headline text-3xl font-bold text-primary">Your pet has hatched!</h2>
+            <p className="mt-2 text-sm font-semibold text-on-surface-variant">Give your new friend a name.</p>
+            <input
+              className="field mt-5 bg-white/80"
+              name="pet_name"
+              value={petName}
+              onChange={(event) => setPetName(event.target.value)}
+              placeholder="Pet name"
+              autoFocus
+            />
+            <button className="primary-button mt-3 w-full" disabled={!petName.trim() || savingName}>
+              Save Name
+            </button>
+          </form>
+        </div>
+      ) : null}
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/50 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto grid h-20 max-w-3xl grid-cols-6 px-2">
           {navItems.map((item) => {
@@ -114,22 +151,6 @@ function ShellChrome({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
     </div>
-  );
-}
-
-function PetwoLoading() {
-  return (
-    <main className="grid min-h-dvh place-items-center px-4">
-      <section className="w-full max-w-xs text-center">
-        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-white/70 shadow-cloud">
-          <img src="/logo-petwo.png" alt="Petwo" className="h-12 w-12 rounded-xl object-cover" />
-        </div>
-        <div className="mx-auto mt-5 h-1.5 w-28 overflow-hidden rounded-full bg-primary-container/60">
-          <div className="h-full w-1/2 animate-pulse rounded-full bg-primary/70" />
-        </div>
-        <p className="mt-4 text-sm font-semibold text-on-surface-variant">Preparing your little world...</p>
-      </section>
-    </main>
   );
 }
 

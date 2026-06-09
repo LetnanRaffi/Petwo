@@ -13,7 +13,7 @@ const truths = [
 
 const dares = [
   "Send a voice note saying one kind sentence.",
-  "Pick tomorrow's Moci care action for your partner.",
+  "Pick tomorrow's pet care action for your partner.",
   "Write a two-line journal note before sleeping.",
 ];
 

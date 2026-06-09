@@ -117,6 +117,8 @@ export type AppState = {
   partner: Profile | null;
   egg: Egg | null;
   pet: Pet | null;
+  pets: Pet[];
+  selectedPetId: string | null;
   wallet: RoomWallet | null;
   activities: Activity[];
   moods: Mood[];

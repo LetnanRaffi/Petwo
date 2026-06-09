@@ -1,8 +1,9 @@
 "use client";
 
 import type { Session, User } from "@supabase/supabase-js";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { applyPetAction, clamp, petActions, type PetAction } from "@/lib/pet-actions";
+import { getPetDisplayName } from "@/lib/pet-assets";
 import { getShopItem } from "@/lib/shop";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type { Activity, AppState, Egg, GameEvent, Journal, Mission, MissionTaskType, Mood, Pet, Profile, Room, RoomWallet } from "@/lib/types";
@@ -22,9 +23,11 @@ type PetwoContextValue = AppState & {
   joinRoom: (inviteCode: string) => Promise<void>;
   doPetAction: (action: PetAction) => Promise<void>;
   updateMood: (mood: string) => Promise<void>;
-  addJournal: (content: string) => Promise<void>;
+  addJournal: (content: string) => Promise<boolean>;
   playTruthOrDare: (prompt: string) => Promise<void>;
   buyShopItem: (itemId: string) => Promise<boolean>;
+  renamePet: (name: string) => Promise<boolean>;
+  selectPet: (petId: string) => void;
   completeOnboarding: (input: OnboardingInput) => Promise<boolean>;
   refresh: () => Promise<void>;
 };
@@ -37,6 +40,8 @@ const initialState: AppState = {
   partner: null,
   egg: null,
   pet: null,
+  pets: [],
+  selectedPetId: null,
   wallet: null,
   activities: [],
   moods: [],
@@ -44,16 +49,6 @@ const initialState: AppState = {
   missions: [],
   gameEvents: [],
   hatchCelebrated: false,
-};
-
-const missionLabels: Record<MissionTaskType, string> = {
-  mood_check: "Check mood",
-  journal_entry: "Write journal",
-  truth_or_dare_played: "Play Truth or Dare",
-  feed_pet: "Feed Moci",
-  drink_pet: "Give Moci a drink",
-  play_pet: "Play with Moci",
-  bath_pet: "Bath Moci",
 };
 
 const actionMissionMap: Partial<Record<PetAction, MissionTaskType>> = {
@@ -71,14 +66,33 @@ function isoDate(value: Date) {
   return value.toISOString().slice(0, 10);
 }
 
-function addHours(value: Date, hours: number) {
-  return new Date(value.getTime() + hours * 60 * 60 * 1000).toISOString();
+function dayRange(value: Date) {
+  const start = new Date(value);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start: start.toISOString(), end: end.toISOString() };
+}
+
+function missionLabel(taskType: MissionTaskType, petName: string) {
+  const labels: Record<MissionTaskType, string> = {
+    mood_check: "Check mood",
+    journal_entry: "Write journal",
+    truth_or_dare_played: "Play Truth or Dare",
+    feed_pet: `Feed ${petName}`,
+    drink_pet: `Give ${petName} a drink`,
+    play_pet: `Play with ${petName}`,
+    bath_pet: `Bath ${petName}`,
+  };
+  return labels[taskType];
 }
 
 export function PetwoProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [state, setState] = useState<AppState>(initialState);
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [loading, setLoading] = useState(isSupabaseConfigured);
+  const loadingRequestId = useRef(0);
 
   const insertActivity = useCallback(async (roomId: string, actorId: string | null, action: string, message: string) => {
     if (!supabase) return null;
@@ -176,28 +190,29 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
         status: "hatching",
         hatch_progress: 0,
         hatch_started_at: startedAt.toISOString(),
-        hatch_ready_at: addHours(startedAt, 1),
+        hatch_ready_at: null,
       })
       .select()
       .single();
 
-    if (data) await insertActivity(roomId, actorId, "egg_created", "A shared mystery egg appeared 🥚");
+    if (data) await insertActivity(roomId, actorId, "egg_created", "A shared mystery egg appeared.");
     return data as Egg | null;
   }, [insertActivity]);
 
-  const createHatchedPet = useCallback(async (roomId: string) => {
+  const createHatchedPet = useCallback(async (roomId: string, petId?: string | null) => {
     if (!supabase) return null;
 
-    const { data: existing } = await supabase.from("pets").select("*").eq("room_id", roomId).maybeSingle();
-    if (existing) return existing as Pet;
+    if (petId) {
+      const { data: existing } = await supabase.from("pets").select("*").eq("id", petId).maybeSingle();
+      if (existing) return existing as Pet;
+    }
 
-    // TODO: Replace fixed MVP result with rarity-based random hatch results.
     const { data } = await supabase
       .from("pets")
       .insert({
         room_id: roomId,
         pet_type: "cat",
-        name: "Moci",
+        name: "Unnamed Pet",
         hunger: 80,
         thirst: 80,
         happiness: 80,
@@ -209,14 +224,14 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
       .select()
       .single();
 
-    if (data) await insertActivity(roomId, null, "pet_created", "Moci joined your little world 🐱");
+    if (data) await insertActivity(roomId, null, "pet_created", "A new pet joined your little world.");
     return data as Pet | null;
   }, [insertActivity]);
 
   const hatchEgg = useCallback(async (egg: Egg, actorId: string | null) => {
     if (!supabase || egg.status === "hatched") return egg;
 
-    const pet = await createHatchedPet(egg.room_id);
+    const pet = await createHatchedPet(egg.room_id, egg.pet_id);
     const { data } = await supabase
       .from("eggs")
       .update({
@@ -229,8 +244,16 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
       .select()
       .single();
 
-    await insertActivity(egg.room_id, actorId, "egg_hatched", "The mystery egg hatched into Moci 🎉");
-    setState((prev) => ({ ...prev, egg: data as Egg, pet: pet ?? prev.pet, hatchCelebrated: true }));
+    await insertActivity(egg.room_id, actorId, "egg_hatched", "The mystery egg hatched. Name your new friend.");
+    setSelectedPetId(pet?.id ?? null);
+    setState((prev) => ({
+      ...prev,
+      egg: data as Egg,
+      pet: pet ?? prev.pet,
+      pets: pet ? prependUniqueById(prev.pets, pet, 20) : prev.pets,
+      selectedPetId: pet?.id ?? prev.selectedPetId,
+      hatchCelebrated: true,
+    }));
     return data as Egg;
   }, [createHatchedPet, insertActivity]);
 
@@ -243,9 +266,9 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
     if (!memberIds.length) return [];
 
     const beforeHatch: Array<[MissionTaskType, number, number, number]> = [
-      ["mood_check", 5, 5, 0],
-      ["journal_entry", 5, 5, 0],
-      ["truth_or_dare_played", 10, 10, 0],
+      ["mood_check", 5, 0, 0],
+      ["journal_entry", 5, 0, 0],
+      ["truth_or_dare_played", 10, 0, 0],
     ];
     const afterHatch: Array<[MissionTaskType, number, number, number]> = [
       ["feed_pet", 10, 0, 5],
@@ -280,20 +303,54 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
   const addCoins = useCallback(async (roomId: string, amount: number, actorId: string | null, reason: string) => {
     if (!supabase || amount <= 0) return null;
 
-    const wallet = await ensureWallet(roomId);
-    const { data } = await supabase
-      .from("room_wallets")
-      .update({
-        coins: (wallet?.coins ?? 0) + amount,
-        total_earned: (wallet?.total_earned ?? 0) + amount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("room_id", roomId)
-      .select()
-      .single();
+    const optimisticTime = new Date().toISOString();
+    setState((prev) => {
+      if (prev.room?.id !== roomId) return prev;
 
-    await insertActivity(roomId, actorId, "coins_earned", `${reason} +${amount} coins`);
+      const wallet =
+        prev.wallet ??
+        ({
+          id: `local-${roomId}`,
+          room_id: roomId,
+          coins: 0,
+          total_earned: 0,
+          created_at: optimisticTime,
+          updated_at: optimisticTime,
+        } satisfies RoomWallet);
+
+      return {
+        ...prev,
+        wallet: {
+          ...wallet,
+          coins: wallet.coins + amount,
+          total_earned: wallet.total_earned + amount,
+          updated_at: optimisticTime,
+        },
+      };
+    });
+
+    let data: RoomWallet | null = null;
+    const { data: incremented, error } = await supabase.rpc("increment_room_wallet", { target_room_id: roomId, amount });
+
+    if (!error && incremented) {
+      data = Array.isArray(incremented) ? (incremented[0] as RoomWallet | undefined) ?? null : (incremented as RoomWallet);
+    } else {
+      const wallet = await ensureWallet(roomId);
+      const result = await supabase
+        .from("room_wallets")
+        .update({
+          coins: (wallet?.coins ?? 0) + amount,
+          total_earned: (wallet?.total_earned ?? 0) + amount,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("room_id", roomId)
+        .select()
+        .single();
+      data = result.data as RoomWallet | null;
+    }
+
     if (data) setState((prev) => ({ ...prev, wallet: data as RoomWallet }));
+    await insertActivity(roomId, actorId, "coins_earned", `${reason} +${amount} coins`);
     return data as RoomWallet | null;
   }, [ensureWallet, insertActivity]);
 
@@ -303,8 +360,14 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
     const egg = eggInput ?? state.egg;
     if (!egg || egg.status === "hatched") return egg;
 
-    const nextProgress = Math.min(100, egg.hatch_progress + amount);
-    const { data } = await supabase.from("eggs").update({ hatch_progress: nextProgress }).eq("id", egg.id).select().single();
+    const { data: currentData } = await supabase.from("eggs").select("*").eq("id", egg.id).maybeSingle();
+    const currentEgg = (currentData as Egg | null) ?? egg;
+    if (currentEgg.status === "hatched") return currentEgg;
+
+    const nextProgress = Math.min(100, currentEgg.hatch_progress + amount);
+    setState((prev) => (prev.egg?.id === currentEgg.id ? { ...prev, egg: { ...prev.egg, hatch_progress: nextProgress } } : prev));
+    const { data } = await supabase.from("eggs").update({ hatch_progress: nextProgress }).eq("id", currentEgg.id).select().single();
+    if (!data) return egg;
     const nextEgg = data as Egg;
 
     await insertActivity(roomId, actorId, "hatch_progress_added", `${reason} +${amount}% hatch progress`);
@@ -314,30 +377,95 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
     return nextEgg;
   }, [hatchEgg, insertActivity, state.egg]);
 
-  const maybeAutoHatch = useCallback(async (egg: Egg | null, actorId: string | null) => {
+  const hasAwardedToday = useCallback(async (roomId: string, action: string) => {
+    if (!supabase) return true;
+
+    const { start, end } = dayRange(new Date());
+    const { data } = await supabase
+      .from("pet_activities")
+      .select("id")
+      .eq("room_id", roomId)
+      .eq("action", action)
+      .gte("created_at", start)
+      .lt("created_at", end)
+      .limit(1);
+
+    return Boolean(data?.length);
+  }, []);
+
+  const maybeAwardJournalPairBonus = useCallback(async (roomId: string, actorId: string | null) => {
+    if (!supabase || !state.egg || state.egg.status === "hatched") return;
+    if (await hasAwardedToday(roomId, "journal_pair_bonus_awarded")) return;
+
+    const { start, end } = dayRange(new Date());
+    const { data: journals } = await supabase
+      .from("journals")
+      .select("author_id")
+      .eq("room_id", roomId)
+      .gte("created_at", start)
+      .lt("created_at", end);
+    const authorIds = new Set((journals ?? []).map((journal) => journal.author_id).filter(Boolean));
+    if (authorIds.size < 2) return;
+
+    await addHatchProgress(roomId, 15, actorId, "Both wrote journals today");
+    await insertActivity(roomId, actorId, "journal_pair_bonus_awarded", "Both of you wrote today. The egg felt closer.");
+  }, [addHatchProgress, hasAwardedToday, insertActivity, state.egg]);
+
+  const maybeAwardCoupleSyncBonus = useCallback(async (roomId: string, actorId: string | null) => {
+    if (!supabase || !state.egg || state.egg.status === "hatched") return;
+    if (await hasAwardedToday(roomId, "couple_sync_bonus_awarded")) return;
+
+    const today = isoDate(new Date());
+    const { start, end } = dayRange(new Date());
+    const [{ data: members }, { data: moods }, { data: journals }, { data: gameEvents }] = await Promise.all([
+      supabase.from("room_members").select("user_id").eq("room_id", roomId),
+      supabase.from("moods").select("user_id").eq("room_id", roomId).eq("mood_date", today),
+      supabase.from("journals").select("author_id").eq("room_id", roomId).gte("created_at", start).lt("created_at", end),
+      supabase.from("game_events").select("actor_id").eq("room_id", roomId).gte("created_at", start).lt("created_at", end),
+    ]);
+
+    const memberIds = new Set((members ?? []).map((member) => member.user_id).filter(Boolean));
+    const activeIds = new Set<string>();
+    (moods ?? []).forEach((mood) => {
+      if (memberIds.has(mood.user_id)) activeIds.add(mood.user_id);
+    });
+    (journals ?? []).forEach((journal) => {
+      if (memberIds.has(journal.author_id)) activeIds.add(journal.author_id);
+    });
+    (gameEvents ?? []).forEach((event) => {
+      if (event.actor_id && memberIds.has(event.actor_id)) activeIds.add(event.actor_id);
+    });
+
+    if (activeIds.size < Math.min(2, memberIds.size)) return;
+
+    await addHatchProgress(roomId, 20, actorId, "Couple sync bonus");
+    await insertActivity(roomId, actorId, "couple_sync_bonus_awarded", "You both showed up today. The egg glowed brighter.");
+  }, [addHatchProgress, hasAwardedToday, insertActivity, state.egg]);
+
+  const maybeHatchByProgress = useCallback(async (egg: Egg | null, actorId: string | null) => {
     if (!egg || egg.status === "hatched") return egg;
 
-    const readyAt = egg.hatch_ready_at ? new Date(egg.hatch_ready_at).getTime() : Infinity;
-    if (egg.hatch_progress >= 100 || readyAt <= Date.now()) return hatchEgg(egg, actorId);
+    if (egg.hatch_progress >= 100) return hatchEgg(egg, actorId);
     return egg;
   }, [hatchEgg]);
 
   const loadState = useCallback(
-    async (activeSession: Session | null = null) => {
+    async (activeSession: Session | null = null, options: { showLoading?: boolean } = {}) => {
+      const requestId = ++loadingRequestId.current;
       if (!supabase || !activeSession) {
         setState(initialState);
         setLoading(false);
         return;
       }
 
-      setLoading(true);
+      if (options.showLoading) setLoading(true);
       const profile = await upsertProfile(activeSession.user);
 
       const { data: member } = await supabase.from("room_members").select("room_id").eq("user_id", activeSession.user.id).maybeSingle();
 
       if (!member?.room_id) {
         setState({ ...initialState, profile });
-        setLoading(false);
+        if (requestId === loadingRequestId.current) setLoading(false);
         return;
       }
 
@@ -363,18 +491,22 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
 
       let egg: Egg | null = null;
       if (memberCount >= 2) egg = await ensureEgg(member.room_id, activeSession.user.id);
-      egg = await maybeAutoHatch(egg, activeSession.user.id);
+      egg = await maybeHatchByProgress(egg, activeSession.user.id);
 
-      const { data: petData } = await supabase.from("pets").select("*").eq("room_id", member.room_id).maybeSingle();
-      const pet = petData as Pet | null;
-      const missions = await ensureMissions(member.room_id, Boolean(pet));
+      const { data: petRows } = await supabase.from("pets").select("*").eq("room_id", member.room_id).order("updated_at", { ascending: false });
+      const pets = (petRows ?? []) as Pet[];
+      const selectedPet = pets.find((item) => item.id === selectedPetId) ?? pets[0] ?? null;
+      const missions = await ensureMissions(member.room_id, pets.length > 0);
+      setSelectedPetId(selectedPet?.id ?? null);
 
       setState({
         profile,
         room,
         partner,
         egg,
-        pet,
+        pet: selectedPet,
+        pets,
+        selectedPetId: selectedPet?.id ?? null,
         wallet: walletResult,
         activities: (activitiesResult.data ?? []) as Activity[],
         moods: (moodsResult.data ?? []) as Mood[],
@@ -383,9 +515,9 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
         gameEvents: (gameEventsResult.data ?? []) as GameEvent[],
         hatchCelebrated: false,
       });
-      setLoading(false);
+      if (requestId === loadingRequestId.current) setLoading(false);
     },
-    [ensureEgg, ensureMissions, ensureWallet, maybeAutoHatch, upsertProfile],
+    [ensureEgg, ensureMissions, ensureWallet, maybeHatchByProgress, selectedPetId, upsertProfile],
   );
 
   useEffect(() => {
@@ -393,39 +525,16 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      loadState(data.session);
+      loadState(data.session, { showLoading: true });
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
-      loadState(nextSession);
+      loadState(nextSession, { showLoading: true });
     });
 
     return () => listener.subscription.unsubscribe();
   }, [loadState]);
-
-  useEffect(() => {
-    if (!supabase || !state.room?.id) return;
-    const roomId = state.room.id;
-    const client = supabase;
-
-    const channel = client
-      .channel(`room:${roomId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "rooms", filter: `id=eq.${roomId}` }, () => loadState(session))
-      .on("postgres_changes", { event: "*", schema: "public", table: "eggs", filter: `room_id=eq.${roomId}` }, () => loadState(session))
-      .on("postgres_changes", { event: "*", schema: "public", table: "pets", filter: `room_id=eq.${roomId}` }, () => loadState(session))
-      .on("postgres_changes", { event: "*", schema: "public", table: "room_wallets", filter: `room_id=eq.${roomId}` }, () => loadState(session))
-      .on("postgres_changes", { event: "*", schema: "public", table: "missions", filter: `room_id=eq.${roomId}` }, () => loadState(session))
-      .on("postgres_changes", { event: "*", schema: "public", table: "pet_activities", filter: `room_id=eq.${roomId}` }, () => loadState(session))
-      .on("postgres_changes", { event: "*", schema: "public", table: "moods", filter: `room_id=eq.${roomId}` }, () => loadState(session))
-      .on("postgres_changes", { event: "*", schema: "public", table: "journals", filter: `room_id=eq.${roomId}` }, () => loadState(session))
-      .on("postgres_changes", { event: "*", schema: "public", table: "game_events", filter: `room_id=eq.${roomId}` }, () => loadState(session))
-      .subscribe();
-
-    return () => {
-      client.removeChannel(channel);
-    };
-  }, [loadState, session, state.room?.id]);
 
   const completeMission = useCallback(async (taskType: MissionTaskType) => {
     if (!supabase || !session || !state.room || !state.profile) return;
@@ -451,10 +560,17 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
     if (mission.reward_xp && state.pet) {
       const next = applyPetXp(state.pet, mission.reward_xp);
       const { data: pet } = await supabase.from("pets").update(next).eq("id", state.pet.id).select().single();
-      if (pet) setState((prev) => ({ ...prev, pet: pet as Pet }));
+      if (pet) {
+        setState((prev) => ({
+          ...prev,
+          pet: pet as Pet,
+          pets: prev.pets.map((item) => (item.id === (pet as Pet).id ? (pet as Pet) : item)),
+        }));
+      }
     }
 
-    await insertActivity(state.room.id, state.profile.id, "daily_mission_completed", `${state.profile.name ?? "Someone"} completed ${missionLabels[taskType]} ✨`);
+    const petName = getPetDisplayName(state.pet?.name);
+    await insertActivity(state.room.id, state.profile.id, "daily_mission_completed", `${state.profile.name ?? "Someone"} completed ${missionLabel(taskType, petName)} ✨`);
   }, [addCoins, addHatchProgress, insertActivity, session, state.missions, state.pet, state.profile, state.room]);
 
   const signIn = useCallback(async () => {
@@ -466,6 +582,7 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) return;
     await supabase.auth.signOut();
     setSession(null);
+    setSelectedPetId(null);
     setState(initialState);
   }, []);
 
@@ -492,10 +609,11 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
     await supabase.from("rooms").update({ partner_id: session.user.id }).eq("id", roomData.id);
     await supabase.from("room_members").insert({ room_id: roomData.id, user_id: session.user.id });
     await ensureWallet(roomData.id);
-    await ensureEgg(roomData.id, session.user.id);
     await insertActivity(roomData.id, session.user.id, "user_joined_room", "A partner joined the room 💙");
+    const egg = await ensureEgg(roomData.id, session.user.id);
+    await addHatchProgress(roomData.id, 15, session.user.id, "Partner joined", egg);
     await loadState(session);
-  }, [ensureEgg, ensureWallet, insertActivity, loadState, session]);
+  }, [addHatchProgress, ensureEgg, ensureWallet, insertActivity, loadState, session]);
 
   const doPetAction = useCallback(async (action: PetAction) => {
     if (!supabase || !session || !state.room || !state.pet || !state.profile) return;
@@ -520,8 +638,12 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
 
     if (!data) return;
 
-    setState((prev) => ({ ...prev, pet: data as Pet }));
-    await insertActivity(state.room.id, state.profile.id, meta.activity, `${state.profile.name ?? "Someone"} ${meta.messageVerb} ${state.pet.name} ${meta.icon}`);
+    setState((prev) => ({
+      ...prev,
+      pet: data as Pet,
+      pets: prev.pets.map((item) => (item.id === (data as Pet).id ? (data as Pet) : item)),
+    }));
+    await insertActivity(state.room.id, state.profile.id, meta.activity, `${state.profile.name ?? "Someone"} ${meta.messageVerb} ${getPetDisplayName(state.pet.name)} ${meta.icon}`);
     await addCoins(state.room.id, 5, state.profile.id, "Care action");
 
     const missionType = actionMissionMap[action];
@@ -541,22 +663,26 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, moods: [data as Mood, ...prev.moods] }));
     await insertActivity(state.room.id, state.profile.id, "mood_checked", `${state.profile.name ?? "Someone"} checked in: ${mood}`);
     await addCoins(state.room.id, 5, state.profile.id, "Mood check");
-    await addHatchProgress(state.room.id, 5, state.profile.id, "Mood check");
+    await addHatchProgress(state.room.id, 8, state.profile.id, "Mood check");
+    await maybeAwardCoupleSyncBonus(state.room.id, state.profile.id);
     await completeMission("mood_check");
-  }, [addCoins, addHatchProgress, completeMission, insertActivity, session, state.moods, state.profile, state.room]);
+  }, [addCoins, addHatchProgress, completeMission, insertActivity, maybeAwardCoupleSyncBonus, session, state.moods, state.profile, state.room]);
 
   const addJournal = useCallback(async (content: string) => {
-    if (!supabase || !session || !state.room || !state.profile || !content.trim()) return;
+    if (!supabase || !session || !state.room || !state.profile || !content.trim()) return false;
 
     const { data } = await supabase.from("journals").insert({ room_id: state.room.id, author_id: state.profile.id, content: content.trim() }).select().single();
-    if (!data) return;
+    if (!data) return false;
 
     setState((prev) => ({ ...prev, journals: prependUniqueById(prev.journals, data as Journal, 30) }));
     await insertActivity(state.room.id, state.profile.id, "journal_created", `${state.profile.name ?? "Someone"} wrote a journal note`);
     await addCoins(state.room.id, 5, state.profile.id, "Journal entry");
-    await addHatchProgress(state.room.id, 5, state.profile.id, "Journal entry");
+    await addHatchProgress(state.room.id, 10, state.profile.id, "Journal entry");
+    await maybeAwardJournalPairBonus(state.room.id, state.profile.id);
+    await maybeAwardCoupleSyncBonus(state.room.id, state.profile.id);
     await completeMission("journal_entry");
-  }, [addCoins, addHatchProgress, completeMission, insertActivity, session, state.profile, state.room]);
+    return true;
+  }, [addCoins, addHatchProgress, completeMission, insertActivity, maybeAwardCoupleSyncBonus, maybeAwardJournalPairBonus, session, state.profile, state.room]);
 
   const playTruthOrDare = useCallback(async (prompt: string) => {
     if (!supabase || !session || !state.room || !state.profile) return;
@@ -570,9 +696,10 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
     if (data) setState((prev) => ({ ...prev, gameEvents: prependUniqueById(prev.gameEvents, data as GameEvent, 20) }));
     await insertActivity(state.room.id, state.profile.id, "truth_or_dare_played", `${state.profile.name ?? "Someone"} played Truth or Dare 🎲`);
     await addCoins(state.room.id, 10, state.profile.id, "Truth or Dare");
-    await addHatchProgress(state.room.id, 10, state.profile.id, "Truth or Dare");
+    await addHatchProgress(state.room.id, 15, state.profile.id, "Truth or Dare");
+    await maybeAwardCoupleSyncBonus(state.room.id, state.profile.id);
     await completeMission("truth_or_dare_played");
-  }, [addCoins, addHatchProgress, completeMission, insertActivity, session, state.profile, state.room]);
+  }, [addCoins, addHatchProgress, completeMission, insertActivity, maybeAwardCoupleSyncBonus, session, state.profile, state.room]);
 
   const buyShopItem = useCallback(async (itemId: string) => {
     if (!supabase || !session || !state.room || !state.profile || !state.pet || !state.wallet) return false;
@@ -590,10 +717,41 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
     const { data: pet } = await supabase.from("pets").update(next).eq("id", state.pet.id).select().single();
 
     if (wallet) setState((prev) => ({ ...prev, wallet: wallet as RoomWallet }));
-    if (pet) setState((prev) => ({ ...prev, pet: pet as Pet }));
-    await insertActivity(state.room.id, state.profile.id, "shop_item_bought", `${state.profile.name ?? "Someone"} bought ${item.name} for ${state.pet.name}`);
+    if (pet) {
+      setState((prev) => ({
+        ...prev,
+        pet: pet as Pet,
+        pets: prev.pets.map((item) => (item.id === (pet as Pet).id ? (pet as Pet) : item)),
+      }));
+    }
+    await insertActivity(state.room.id, state.profile.id, "shop_item_bought", `${state.profile.name ?? "Someone"} bought ${item.name} for ${getPetDisplayName(state.pet.name)}`);
     return true;
   }, [insertActivity, session, state.pet, state.profile, state.room, state.wallet]);
+
+  const renamePet = useCallback(async (name: string) => {
+    if (!supabase || !session || !state.room || !state.profile || !state.pet) return false;
+
+    const petName = getPetDisplayName(name);
+    const { data } = await supabase.from("pets").update({ name: petName, updated_at: new Date().toISOString() }).eq("id", state.pet.id).select().single();
+    if (!data) return false;
+
+    setState((prev) => ({
+      ...prev,
+      pet: data as Pet,
+      pets: prev.pets.map((item) => (item.id === (data as Pet).id ? (data as Pet) : item)),
+      hatchCelebrated: false,
+    }));
+    await insertActivity(state.room.id, state.profile.id, "pet_named", `${state.profile.name ?? "Someone"} named your pet ${petName}`);
+    return true;
+  }, [insertActivity, session, state.pet, state.profile, state.room]);
+
+  const selectPet = useCallback((petId: string) => {
+    setSelectedPetId(petId);
+    setState((prev) => {
+      const pet = prev.pets.find((item) => item.id === petId) ?? prev.pet;
+      return { ...prev, pet, selectedPetId: pet?.id ?? null };
+    });
+  }, []);
 
   const value = useMemo<PetwoContextValue>(
     () => ({
@@ -609,10 +767,12 @@ export function PetwoProvider({ children }: { children: React.ReactNode }) {
       addJournal,
       playTruthOrDare,
       buyShopItem,
+      renamePet,
+      selectPet,
       completeOnboarding,
       refresh: () => loadState(session),
     }),
-    [loading, session, state, signIn, signOut, createRoom, joinRoom, doPetAction, updateMood, addJournal, playTruthOrDare, buyShopItem, completeOnboarding, loadState],
+    [loading, session, state, signIn, signOut, createRoom, joinRoom, doPetAction, updateMood, addJournal, playTruthOrDare, buyShopItem, renamePet, selectPet, completeOnboarding, loadState],
   );
 
   if (!isSupabaseConfigured) return <SetupErrorScreen />;

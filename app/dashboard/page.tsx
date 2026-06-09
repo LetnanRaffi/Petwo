@@ -3,28 +3,21 @@
 import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Coins, Copy, Egg, PawPrint, Send, ShoppingBag, Sparkles } from "lucide-react";
+import { EggDisplay } from "@/components/egg-display";
+import { PetDisplay } from "@/components/pet-display";
 import { PageTitle, StatBar, formatTime } from "@/components/ui";
 import { usePetwo } from "@/components/petwo-provider";
-import { petEmoji } from "@/lib/pet-visuals";
+import { getPetDisplayName } from "@/lib/pet-assets";
 import type { MissionTaskType } from "@/lib/types";
 
 const moods = ["😊 Happy", "😌 Chill", "😴 Tired", "😔 Sad", "😤 Stressed"];
-
-const missionCopy: Record<MissionTaskType, { label: string; icon: string }> = {
-  mood_check: { label: "Check mood", icon: "😊" },
-  journal_entry: { label: "Write journal", icon: "📓" },
-  truth_or_dare_played: { label: "Play Truth or Dare", icon: "🎲" },
-  feed_pet: { label: "Feed Moci", icon: "🍖" },
-  drink_pet: { label: "Give Moci a drink", icon: "🥛" },
-  play_pet: { label: "Play with Moci", icon: "🎾" },
-  bath_pet: { label: "Bath Moci", icon: "🫧" },
-};
 
 export default function DashboardPage() {
   const {
     profile,
     partner,
     pet,
+    pets,
     egg,
     room,
     wallet,
@@ -46,7 +39,8 @@ export default function DashboardPage() {
     [missions, profile?.id, today],
   );
   const hatchPercent = egg?.status === "hatched" ? 100 : egg?.hatch_progress ?? 0;
-  const timeLeft = formatTimeLeft(egg?.hatch_ready_at);
+  const petName = getPetDisplayName(pet?.name);
+  const hatchMessage = hatchProgressMessage(hatchPercent);
 
   async function submitJoin(event: FormEvent) {
     event.preventDefault();
@@ -100,7 +94,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5">
-      <PageTitle title={pet ? `${pet.name}'s little world` : "Mystery Egg"} subtitle={`Shared with ${partner.name ?? "your partner"}`} />
+      <PageTitle title={pet ? `${petName}'s little world` : "Mystery Egg"} subtitle={`Shared with ${partner.name ?? "your partner"}`} />
 
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-2xl border border-white/50 bg-primary-container/80 p-5 shadow-cloud">
@@ -121,15 +115,17 @@ export default function DashboardPage() {
       {!pet ? (
         <section className="glass-card rounded-2xl p-5">
           <div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
-            <div className="grid h-28 w-28 place-items-center rounded-[28px] bg-primary-container/70 text-6xl">🥚</div>
+            <div className="h-36 w-36">
+              <EggDisplay progress={hatchPercent} />
+            </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Mystery Egg</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Hatch bond</p>
               <h2 className="mt-1 font-headline text-3xl font-bold text-primary">Play together to hatch faster.</h2>
-              <p className="mt-2 text-sm text-on-surface-variant">Time left: {timeLeft}</p>
+              <p className="mt-2 text-sm text-on-surface-variant">{hatchMessage}</p>
               <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/70">
                 <div className="h-full rounded-full bg-primary" style={{ width: `${hatchPercent}%` }} />
               </div>
-              <p className="mt-2 text-xs font-bold text-primary">{hatchPercent}% hatch progress</p>
+              <p className="mt-2 text-xs font-bold text-primary">{hatchPercent}% bond energy</p>
             </div>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
@@ -139,10 +135,13 @@ export default function DashboardPage() {
         </section>
       ) : (
         <section className="glass-card rounded-2xl p-5">
-          {hatchCelebrated ? <p className="mb-3 rounded-xl bg-primary-container px-3 py-2 text-sm font-bold text-primary">The egg hatched. Welcome Moci 🎉</p> : null}
+          {hatchCelebrated ? <p className="mb-3 rounded-xl bg-primary-container px-3 py-2 text-sm font-bold text-primary">The egg hatched. Name your new friend.</p> : null}
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="font-headline text-3xl font-bold text-primary">{petEmoji(pet.pet_type)} {pet.name}</h2>
+              <div className="mb-2 h-24 w-24">
+                <PetDisplay name={petName} />
+              </div>
+              <h2 className="font-headline text-3xl font-bold text-primary">{petName}</h2>
               <p className="text-sm text-on-surface-variant">Level {pet.level} · {pet.xp}% XP</p>
             </div>
             <div className="flex gap-2">
@@ -159,11 +158,32 @@ export default function DashboardPage() {
         </section>
       )}
 
+      {pets.length > 1 ? (
+        <section className="glass-card rounded-2xl p-5">
+          <h2 className="mb-3 font-headline text-xl font-bold text-primary">Pet Family</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {pets.slice(0, 4).map((item) => {
+              const itemName = getPetDisplayName(item.name);
+              return (
+                <div key={item.id} className="rounded-xl bg-white/50 p-3">
+                  <div className="h-20 w-20">
+                    <PetDisplay name={itemName} />
+                  </div>
+                  <p className="mt-2 truncate text-sm font-bold text-primary">{itemName}</p>
+                  <p className="text-xs font-semibold text-on-surface-variant">Level {item.level}</p>
+                </div>
+              );
+            })}
+          </div>
+          {pets.length > 4 ? <p className="mt-3 text-xs font-bold text-on-surface-variant">+{pets.length - 4} more pets in the room.</p> : null}
+        </section>
+      ) : null}
+
       <section className="glass-card rounded-2xl p-5">
         <h2 className="mb-3 font-headline text-xl font-bold text-primary">Daily missions</h2>
         <div className="grid gap-2">
           {myMissions.map((mission) => {
-            const copy = missionCopy[mission.task_type];
+            const copy = missionCopy(mission.task_type, petName);
             const done = mission.status === "completed";
             return (
               <div key={mission.id} className={`flex items-center justify-between rounded-xl px-3 py-3 ${done ? "bg-primary-container/60 text-primary" : "bg-white/50"}`}>
@@ -206,11 +226,22 @@ export default function DashboardPage() {
   );
 }
 
-function formatTimeLeft(value?: string | null) {
-  if (!value) return "about 1 hour";
-  const ms = new Date(value).getTime() - Date.now();
-  if (ms <= 0) return "ready now";
-  const minutes = Math.ceil(ms / 60000);
-  if (minutes >= 60) return `${Math.ceil(minutes / 60)}h`;
-  return `${minutes}m`;
+function hatchProgressMessage(progress: number) {
+  if (progress >= 100) return "Your new friend is ready to meet you.";
+  if (progress >= 70) return "Tiny cracks appear. Keep caring together.";
+  if (progress >= 30) return "It wiggles when you two spend time together.";
+  return "The egg is getting used to your little world.";
+}
+
+function missionCopy(taskType: MissionTaskType, petName: string): { label: string; icon: string } {
+  const labels: Record<MissionTaskType, { label: string; icon: string }> = {
+    mood_check: { label: "Check mood", icon: "😊" },
+    journal_entry: { label: "Write journal", icon: "📓" },
+    truth_or_dare_played: { label: "Play Truth or Dare", icon: "🎲" },
+    feed_pet: { label: `Feed ${petName}`, icon: "🍖" },
+    drink_pet: { label: `Give ${petName} a drink`, icon: "🥛" },
+    play_pet: { label: `Play with ${petName}`, icon: "🎾" },
+    bath_pet: { label: `Bath ${petName}`, icon: "🫧" },
+  };
+  return labels[taskType];
 }
